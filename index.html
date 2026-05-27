@@ -9,7 +9,8 @@
 
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icon-512.png">
+<link rel="apple-touch-icon" href="/logo.png">
+<link rel="icon" type="image/png" href="/logo.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Porra 2026">
@@ -39,8 +40,9 @@ h1,h2,h3,h4{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spa
 #setup-screen{position:fixed;inset:0;background:var(--bg);z-index:998;display:flex;align-items:center;justify-content:center;padding:24px}
 #setup-screen.hidden{display:none}
 .setup-card{background:var(--s2);border:1px solid rgba(200,168,75,0.2);border-radius:20px;padding:40px;max-width:500px;width:100%;text-align:center}
-.setup-logo{font-size:52px;margin-bottom:16px}
-.setup-title{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:var(--text);margin-bottom:6px}
+.setup-logo{margin-bottom:12px;display:flex;justify-content:center}
+.setup-logo img{width:160px;height:160px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(200,168,75,0.25))}
+.setup-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:var(--text);margin-bottom:4px}
 .setup-sub{font-size:14px;color:var(--text3);margin-bottom:32px}
 .setup-steps{display:flex;flex-direction:column;gap:0}
 .setup-step{display:none}
@@ -347,9 +349,8 @@ select.form-input{cursor:pointer}
 <!-- ====== SETUP SCREEN ====== -->
 <div id="setup-screen" class="hidden">
   <div class="setup-card">
-    <div class="setup-logo">⚽</div>
-    <div class="setup-title">Porra Mundial 2026</div>
-    <div class="setup-sub">USA · México · Canadá</div>
+    <div class="setup-logo"><img src="/logo.png" alt="Mundialista '26 Porra"></div>
+    <div class="setup-sub" style="margin-bottom:32px">USA · México · Canadá</div>
 
     <div class="setup-steps">
       <!-- Step 0: Elegir acción -->
@@ -427,7 +428,7 @@ select.form-input{cursor:pointer}
 <div class="shell">
   <aside class="sidebar">
     <div class="logo" onclick="goto('config')">
-      <div class="logo-badge">⚽ Porra Oficial</div>
+      <img src="/logo.png" alt="Mundialista 26 Porra" style="width:52px;height:52px;object-fit:contain;margin-bottom:6px;display:block">
       <div class="logo-title" id="sidebar-liga-name">Mundial 2026</div>
       <div class="logo-sub">USA · México · Canadá</div>
       <div class="liga-code" onclick="copyLigaCode(event)" title="Copiar código">
