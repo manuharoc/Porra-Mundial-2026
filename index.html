@@ -1436,7 +1436,7 @@ function renderDashboard(){
 function renderNextMatches(){
   const c = document.getElementById('next-matches-list');
   if(!c) return;
-  const matches = GRUPOS.flatMap(g=>g.partidos.map(m=>({...m,grupo:g.id}))).slice(0,5);
+  const matches = GRUPOS.flatMap(g=>g.partidos.map(m=>({...m,grupo:g.id}))).slice(0,4);
   c.innerHTML = matches.map(m=>{
     const key=`G${m.grupo}_${m.n}`;
     const res=(cache.resultados.grupos||{})[key];
