@@ -21,10 +21,20 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#07090f;--s1:#0d1117;--s2:#131a26;--s3:#1c2535;--s4:#253045;
-  --accent:#7b2cbf;--accent2:#9d4edd;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;
-  --text:#eef2ff;--text2:#8ba0c4;--text3:#4a5a78;
-  --border:rgba(123,44,191,0.12);--border2:rgba(255,255,255,0.06);--r:10px;
+  --bg:#05020a;
+  --s1:#0a0414;
+  --s2:#110622;
+  --s3:#1a0b33;
+  --s4:#240f47;
+  --accent:#c77dff;
+  --accent2:#e0b3ff;
+  --green:#00d13b;
+  --red:#e3000f;
+  --blue:#4a00e0;
+  --text:#fcfbff;
+  --text2:#c6bcda;
+  --text3:#9584b3;
+  --border:rgba(199,125,255,0.2);--border2:rgba(255,255,255,0.06);--r:10px;
 }
 body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font-size:15px;line-height:1.5;min-height:100vh}
 h1,h2,h3,h4{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.3px}
@@ -39,7 +49,7 @@ h1,h2,h3,h4{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spa
 /* SETUP SCREEN */
 #setup-screen{position:fixed;inset:0;background:var(--bg);z-index:998;display:flex;align-items:center;justify-content:center;padding:24px}
 #setup-screen.hidden{display:none}
-.setup-card{background:var(--s2);border:1px solid rgba(123,44,191,0.2);border-radius:20px;padding:40px;max-width:500px;width:100%;text-align:center}
+.setup-card{background:linear-gradient(135deg, #10002b, #240046);border:1px solid rgba(199,125,255,0.2);border-radius:20px;padding:40px;max-width:500px;width:100%;text-align:center}
 .setup-logo{margin-bottom:12px;display:flex;justify-content:center}
 .setup-logo img{width:240px;height:240px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(123,44,191,0.25))}
 .setup-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:var(--text);margin-bottom:4px}
@@ -58,8 +68,8 @@ h1,h2,h3,h4{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spa
 .opt-sub{font-size:12px;color:var(--text3);margin-top:3px}
 
 /* LAYOUT */
-.shell{display:grid;grid-template-columns:224px 1fr;min-height:100vh}
-.sidebar{background:var(--s1);border-right:1px solid var(--border2);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{width:260px;background:linear-gradient(160deg, #10002b 0%, #240046 100%);border-right:1px solid var(--border2);display:flex;flex-direction:column;padding:32px 20px;position:relative;z-index:100;flex-shrink:0}
 .main{overflow:hidden}
 
 /* SIDEBAR */
@@ -2096,4 +2106,5 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
 
