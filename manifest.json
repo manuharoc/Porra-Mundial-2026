@@ -1,0 +1,25 @@
+{
+  "name": "Porra Mundial 2026",
+  "short_name": "Porra 2026",
+  "description": "Predicciones del Mundial de Fútbol 2026 — USA · México · Canadá",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07090f",
+  "theme_color": "#c8a84b",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
