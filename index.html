@@ -214,6 +214,17 @@ td.pts-col{color:var(--accent);font-weight:700;font-family:'Barlow Condensed',sa
 .deadline-banner{background:var(--s2);border:1px solid rgba(200,168,75,0.2);border-radius:10px;padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)}
 .deadline-banner .dl-icon{font-size:20px;flex-shrink:0}
 .deadline-banner strong{color:var(--accent)}
+/* BONUS PANEL */
+.bonus-panel{background:var(--s2);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:18px;margin-bottom:20px}
+.bonus-panel-title{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#60a5fa;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bonus-table{width:100%;border-collapse:collapse}
+.bonus-table th{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;padding:6px 0;text-align:left;border-bottom:1px solid var(--border2)}
+.bonus-table td{padding:8px 0;font-size:13px;color:var(--text2);border-bottom:1px solid var(--border2)}
+.bonus-table tr:last-child td{border-bottom:none}
+.bonus-inp{width:54px;height:30px;border-radius:6px;background:var(--s4);border:1px solid var(--border2);color:var(--text);font-size:13px;font-weight:700;text-align:center;font-family:inherit;-moz-appearance:textfield}
+.bonus-inp::-webkit-outer-spin-button,.bonus-inp::-webkit-inner-spin-button{-webkit-appearance:none}
+.bonus-inp:focus{outline:none;border-color:var(--accent)}
+.bonus-badge{display:inline-block;background:rgba(59,130,246,0.15);color:#60a5fa;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;font-family:'Barlow Condensed',sans-serif}
 
 /* NORMAS */
 .rules-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}
@@ -544,13 +555,18 @@ select.form-input{cursor:pointer}
     <div id="page-especiales" class="page">
       <div class="topbar">
         <div class="topbar-title">🌟 Predicciones Especiales</div>
-        <div id="pred-user-selector-esp"></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="pred-user-selector-esp"></div>
+          <div id="esp-bonus-btn"></div>
+        </div>
       </div>
       <div style="padding:24px">
         <div class="deadline-banner">
           <span class="dl-icon">⏳</span>
           <span>Las predicciones especiales deben realizarse <strong>antes del inicio del torneo (11 jun 2026 · 21:00 CEST)</strong>. Cada predicción registra automáticamente la fecha y hora en que fue enviada.</span>
         </div>
+        <!-- Bonus por rondas -->
+        <div id="bonus-rondas-panel"></div>
         <div class="special-grid">
           <div class="special-card">
             <div class="special-icon">🏆</div>
@@ -981,7 +997,8 @@ const cache = {
   participantes: [],  // [{ id, name, emoji, avatarBg, avatarColor, isAdmin }]
   predicciones: {},   // { [pid]: { grupos:{key:{gl,gv}}, elim:{code:winner}, especiales:{tipo:valor}, especialesTs:{tipo:isoStr} } }
   resultados: { grupos:{}, elim:{}, especiales:{} },
-  normas: { pts:[], normas:[] }
+  normas: { pts:[], normas:[] },
+  bonusRondas: null   // { grupos:{n,pts}, r32:{n,pts}, octavos:{n,pts}, cuartos:{n,pts}, semis:{n,pts}, final:{n,pts} }
 };
 
 let currentViewUser = null; // participant being viewed/edited
@@ -1108,17 +1125,32 @@ async function loadAllData(){
       pts: normasData.filter(n=>n.tipo==='pts').map(n=>n.datos),
       normas: normasData.filter(n=>n.tipo==='norma').map(n=>n.datos)
     };
+    const bonusRow = normasData.find(n=>n.tipo==='bonus_rondas');
+    cache.bonusRondas = bonusRow ? bonusRow.datos : getDefaultBonusRondas();
   } else {
     cache.normas = { pts: JSON.parse(JSON.stringify(DEFAULT_PTS)), normas: JSON.parse(JSON.stringify(DEFAULT_NORMAS)) };
+    cache.bonusRondas = getDefaultBonusRondas();
     await saveNormasToSupabase();
   }
+}
+
+function getDefaultBonusRondas(){
+  return {
+    grupos:  { n:16, pts:15 },
+    r32:     { n:12, pts:10 },
+    octavos: { n:6,  pts:8  },
+    cuartos: { n:3,  pts:6  },
+    semis:   { n:2,  pts:5  },
+    final:   { n:1,  pts:4  }
+  };
 }
 
 async function saveNormasToSupabase(){
   await sb.from('normas').delete().eq('liga_id', session.liga_id);
   const rows = [
     ...cache.normas.pts.map((p,i)=>({ liga_id:session.liga_id, tipo:'pts', datos:p, orden:i })),
-    ...cache.normas.normas.map((n,i)=>({ liga_id:session.liga_id, tipo:'norma', datos:n, orden:i }))
+    ...cache.normas.normas.map((n,i)=>({ liga_id:session.liga_id, tipo:'norma', datos:n, orden:i })),
+    { liga_id:session.liga_id, tipo:'bonus_rondas', datos:cache.bonusRondas||getDefaultBonusRondas(), orden:0 }
   ];
   if(rows.length > 0) await sb.from('normas').insert(rows);
 }
@@ -1319,6 +1351,49 @@ function renderPage(page){
   if(map[page]) map[page]();
 }
 
+// ===================== BONUS RONDAS =====================
+const ELIM_ROUND_CODES = {
+  r32:     ['M73','M74','M75','M76','M77','M78','M79','M80','M81','M82','M83','M84','M85','M86','M87','M88'],
+  octavos: ['M89','M90','M91','M92','M93','M94','M95','M96'],
+  cuartos: ['M97','M98','M99','M100'],
+  semis:   ['M101','M102'],
+  final:   ['M104']
+};
+
+function calcBonusRondas(uid){
+  const bonus = cache.bonusRondas;
+  if(!bonus) return 0;
+  const preds = cache.predicciones[uid] || {};
+  const eRes = cache.resultados.elim||{};
+  const ePreds = preds.elim||{};
+  let total = 0;
+  // Eliminatorias rounds
+  for(const round of ['r32','octavos','cuartos','semis','final']){
+    if(!bonus[round] || !bonus[round].pts) continue;
+    const codes = ELIM_ROUND_CODES[round];
+    let hits = 0;
+    for(const code of codes){
+      if(ePreds[code] && eRes[code] && ePreds[code]===eRes[code]) hits++;
+    }
+    if(hits >= bonus[round].n) total += bonus[round].pts;
+  }
+  // Grupos bonus: count group matches where user got result or winner right
+  if(bonus.grupos && bonus.grupos.pts > 0){
+    const gPreds = preds.grupos||{}, gRes = cache.resultados.grupos||{};
+    let gHits = 0;
+    for(const key in gPreds){
+      const p=gPreds[key], r=gRes[key];
+      if(!r||r.gl===''||r.gl===undefined) continue;
+      const pg=parseInt(p.gl),pv=parseInt(p.gv),rg=parseInt(r.gl),rv=parseInt(r.gv);
+      if(pg===rg&&pv===rv){ gHits++; continue; }
+      const pw=pg>pv?'L':pg<pv?'V':'D', rw=rg>rv?'L':rg<rv?'V':'D';
+      if(pw===rw) gHits++;
+    }
+    if(gHits >= bonus.grupos.n) total += bonus.grupos.pts;
+  }
+  return total;
+}
+
 // ===================== SCORING =====================
 function calcScore(uid){
   const preds = cache.predicciones[uid] || {};
@@ -1346,7 +1421,8 @@ function calcScore(uid){
   const esp=preds.especiales||{}, re=cache.resultados.especiales||{};
   if(esp.campeon&&re.campeon&&esp.campeon===re.campeon) campeon_+=20;
   if(esp.subcampeon&&re.subcampeon&&esp.subcampeon===re.subcampeon) sub+=12;
-  return {grupos,r32,octavos,cuartos,semis,final:final_,campeon:campeon_,sub,total:grupos+r32+octavos+cuartos+semis+final_+campeon_+sub};
+  const bonus = calcBonusRondas(uid);
+  return {grupos,r32,octavos,cuartos,semis,final:final_,campeon:campeon_,sub,bonus,total:grupos+r32+octavos+cuartos+semis+final_+campeon_+sub+bonus};
 }
 
 // ===================== DASHBOARD =====================
@@ -1556,6 +1632,12 @@ const TORNEO_START = new Date('2026-06-11T19:00:00Z');
 
 function renderEspeciales(){
   document.getElementById('pred-user-selector-esp').innerHTML=renderUserSelector('switchPredUserEsp');
+  // Botón de configuración de bonus (solo admin)
+  const bonusBtn = document.getElementById('esp-bonus-btn');
+  if(bonusBtn) bonusBtn.innerHTML = isAdmin()
+    ? `<button class="btn btn-sm" onclick="openBonusRondasConfig()" title="Configurar bonus por rondas">🎯 Bonus rondas</button>` : '';
+  // Panel de bonus (visible para todos)
+  renderBonusRondasPanel();
   const opts=ALL_TEAMS.map(t=>`<option value="${t}">${t}</option>`).join('');
   const matchOpts=GRUPOS.flatMap(g=>g.partidos.map(m=>`<option value="${m.local} vs ${m.visitante}">${m.local} vs ${m.visitante} (Gr. ${g.id})</option>`)).join('');
   ['select-campeon','select-subcampeon','select-tercero'].forEach(id=>{
@@ -1615,6 +1697,94 @@ async function saveSpecial(type, value){
   }
   renderSpecialTimestamp(type, cache.predicciones[uid].especialesTs[type]);
   if(!error) showToast('✅ Guardado');
+}
+
+function renderBonusRondasPanel(){
+  const el = document.getElementById('bonus-rondas-panel');
+  if(!el) return;
+  const b = cache.bonusRondas;
+  if(!b){ el.innerHTML=''; return; }
+  const rounds = [
+    {key:'grupos',  label:'Fase de Grupos',  desc:'aciertos (resultado o ganador)'},
+    {key:'r32',     label:'Ronda de 32',      desc:'clasificados acertados (de 16)'},
+    {key:'octavos', label:'Octavos de Final', desc:'clasificados acertados (de 8)'},
+    {key:'cuartos', label:'Cuartos de Final', desc:'clasificados acertados (de 4)'},
+    {key:'semis',   label:'Semifinales',      desc:'clasificados acertados (de 2)'},
+    {key:'final',   label:'Final',            desc:'finalista acertado (de 1)'}
+  ];
+  const rows = rounds.map(r=>{
+    const cfg = b[r.key]||{n:0,pts:0};
+    if(!cfg.pts) return ''; // hide rounds with 0 bonus
+    return `<tr>
+      <td style="color:var(--text);font-weight:600">${r.label}</td>
+      <td style="color:var(--text3);font-size:12px">&ge; ${cfg.n} ${r.desc}</td>
+      <td><span class="bonus-badge">+${cfg.pts} pts</span></td>
+    </tr>`;
+  }).filter(Boolean).join('');
+  if(!rows){ el.innerHTML=''; return; }
+  el.innerHTML = `<div class="bonus-panel">
+    <div class="bonus-panel-title">
+      <span>🎯 Bonus por rondas</span>
+      <span style="font-size:11px;color:var(--text3);font-weight:400">Puntos extra al superar el umbral de aciertos por ronda</span>
+    </div>
+    <table class="bonus-table">
+      <thead><tr><th>Ronda</th><th>Condici&oacute;n m&iacute;nima</th><th>Bonus</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function openBonusRondasConfig(){
+  if(!isAdmin()){ showToast('Solo el admin puede hacer esto'); return; }
+  const b = cache.bonusRondas || getDefaultBonusRondas();
+  const rounds = [
+    {key:'grupos',  label:'Fase de Grupos',   hint:'de 72 partidos posibles'},
+    {key:'r32',     label:'Ronda de 32',       hint:'de 16 clasificados posibles'},
+    {key:'octavos', label:'Octavos de Final',  hint:'de 8 clasificados posibles'},
+    {key:'cuartos', label:'Cuartos de Final',  hint:'de 4 clasificados posibles'},
+    {key:'semis',   label:'Semifinales',       hint:'de 2 clasificados posibles'},
+    {key:'final',   label:'Final',             hint:'de 1 finalista posible'}
+  ];
+  const rows = rounds.map(r=>{
+    const cfg=b[r.key]||{n:0,pts:0};
+    return `<tr>
+      <td style="font-size:13px;color:var(--text);padding:9px 0;font-weight:600">${r.label}<br><span style="font-size:11px;color:var(--text3);font-weight:400">${r.hint}</span></td>
+      <td style="padding:9px 8px;white-space:nowrap">&ge; <input class="bonus-inp" type="number" min="0" id="bcfg-n-${r.key}" value="${cfg.n}"> aciertos</td>
+      <td style="padding:9px 8px;white-space:nowrap">&rarr; <input class="bonus-inp" type="number" min="0" id="bcfg-pts-${r.key}" value="${cfg.pts}"> pts</td>
+    </tr>`;
+  }).join('');
+  const existing = document.getElementById('modal-bonus-rondas');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.className='modal-overlay open';
+  modal.id='modal-bonus-rondas';
+  modal.innerHTML=`<div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">🎯 Bonus por Rondas</div>
+      <button class="modal-close" onclick="document.getElementById('modal-bonus-rondas').remove()">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Define el m&iacute;nimo de aciertos por ronda para obtener el bonus. Pon <strong style="color:var(--text)">0 pts</strong> para desactivar una ronda.</p>
+    <table style="width:100%;border-collapse:collapse">${rows}</table>
+    <button class="btn btn-accent btn-full" style="margin-top:20px" onclick="saveBonusRondasConfig()">💾 Guardar configuraci&oacute;n</button>
+  </div>`;
+  modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+async function saveBonusRondasConfig(){
+  const rounds=['grupos','r32','octavos','cuartos','semis','final'];
+  const newBonus={};
+  for(const k of rounds){
+    const n=parseInt(document.getElementById('bcfg-n-'+k).value)||0;
+    const p=parseInt(document.getElementById('bcfg-pts-'+k).value)||0;
+    newBonus[k]={n,pts:p};
+  }
+  cache.bonusRondas=newBonus;
+  await saveNormasToSupabase();
+  const modal=document.getElementById('modal-bonus-rondas');
+  if(modal) modal.remove();
+  renderEspeciales();
+  showToast('✅ Bonus de rondas guardado');
 }
 
 // ===================== GRUPOS TORNEO =====================
