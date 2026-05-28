@@ -482,32 +482,41 @@ function calcScore(uid){
 function renderDashboard(){
   document.getElementById('dash-participantes').textContent = cache.participantes.length;
   applySidebarProfile();
-  const scores = cache.participantes.map(p=>({...p,...calcScore(p.id)})).sort((a,b)=>b.total-a.total);
-  const tbody = document.getElementById('dashboard-ranking-body');
-  if(!tbody) return;
-  if(!scores.length){
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:28px">Añade participantes para ver la clasificación</td></tr>';
-  } else {
-    tbody.innerHTML = scores.map((p,i)=>{
-      const pos=i+1, bc=pos===1?'pos-1':pos===2?'pos-2':pos===3?'pos-3':'pos-n';
-      const youMark=p.id===getMyId()?'<span class="you-badge">yo</span>':'';
-      const adminMark=p.isAdmin?'<span class="admin-tag">👑</span>':'';
-      const fireMark=p.exactMatches>=3?`<span title="${p.exactMatches} resultados exactos" style="margin-left:5px;font-size:14px;animation:pulse 2s infinite">🔥</span>`:'';
-      return `<tr style="cursor:pointer" onclick="openVsModal('${p.id}')"><td><span class="pos-badge ${bc}">${pos}</span></td><td class="name-col">${p.name}${youMark}${adminMark}${fireMark}</td><td class="pts-col">${p.grupos}</td><td>${p.r32+p.octavos+p.cuartos+p.semis+p.final}</td><td style="color:var(--accent2)">${p.campeon}</td><td class="pts-col" style="font-size:18px">${p.total}</td></tr>`;
-    }).join('');
-  }
   renderNextMatches();
 }
 
 function renderNextMatches(){
   const c = document.getElementById('next-matches-list');
   if(!c) return;
-  const matches = GRUPOS.flatMap(g=>g.partidos.map(m=>({...m,grupo:g.id}))).slice(0,4);
-  c.innerHTML = matches.map(m=>{
-    const key=`G${m.grupo}_${m.n}`;
-    const res=(cache.resultados.grupos||{})[key];
-    const hasRes=res&&res.gl!==''&&res.gl!==undefined;
-    return `<div class="match-row"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div><div style="font-size:10px;color:var(--text3)">Grupo ${m.grupo}</div></div><div class="team-block"><div class="team-name-match">${m.local}</div></div><div class="score-center">${hasRes?`<div class="score-display">${res.gl}–${res.gv}</div>`:'<div class="score-vs">VS</div>'}<div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${m.visitante}</div></div><div class="pred-block">${renderPredInputsHtml(key)}</div></div>`;
+  
+  let upcoming = [];
+  GRUPOS.forEach(g => {
+    g.partidos.forEach(m => {
+      const key = `G${g.id}_${m.n}`;
+      const res = (cache.resultados.grupos || {})[key];
+      // Include matches that don't have a result yet
+      if (!res || res.gl === '' || res.gl === undefined) {
+        const parts = m.fecha.split(' ');
+        const day = parseInt(parts[0]);
+        const month = parts[1].toLowerCase().startsWith('jun') ? 5 : 6;
+        const [h, min] = m.hora.split(':').map(Number);
+        const ts = new Date(2026, month, day, h, min).getTime();
+        upcoming.push({ ...m, grupo: g.id, key, ts });
+      }
+    });
+  });
+
+  // Sort chronologically and take first 4
+  upcoming.sort((a, b) => a.ts - b.ts);
+  const matches = upcoming.slice(0, 4);
+
+  if (!matches.length) {
+    c.innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px">No hay partidos próximos en fase de grupos.</div>';
+    return;
+  }
+
+  c.innerHTML = matches.map(m => {
+    return `<div class="match-row"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div><div style="font-size:10px;color:var(--text3)">Grupo ${m.grupo}</div></div><div class="team-block"><div class="team-name-match">${m.local}</div></div><div class="score-center"><div class="score-vs">VS</div><div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${m.visitante}</div></div><div class="pred-block">${renderPredInputsHtml(m.key)}</div></div>`;
   }).join('');
 }
 
