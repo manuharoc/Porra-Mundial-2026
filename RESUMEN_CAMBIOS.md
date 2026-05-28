@@ -29,5 +29,12 @@ Para no tener que meter los resultados a mano en 2026, hemos sentando las bases 
 - Se ha creado la carpeta `supabase/functions/sync-matches/` con el código en TypeScript (Deno) para una **Edge Function** que consulte una API (como API-Football) y escriba en Supabase.
 - Se ha añadido `supabase/setup_cron.sql` con el comando exacto para activar `pg_cron` en la base de datos y que esta función se ejecute sola cada 5 minutos. Gracias a `Supabase Realtime`, la web se actualizará sola sin tocar nada.
 
+## 🕹️ 6. Gamificación y Retención (Engagement)
+Para evitar que la gente rellene la porra el primer día y no vuelva a entrar, se ha añadido:
+- **Botón "🎲 Próxima Jornada":** Un botón inteligente que rellena mágicamente solo los 12 próximos partidos vacíos (por proximidad cronológica). Obliga a los usuarios a volver cada 2-3 días.
+- **Modo On-Fire (Rachas 🔥):** Se calculan los resultados EXACTOS. Si tienes 3 o más, aparece un 🔥 animado al lado de tu nombre en el Ranking.
+- **El "Cara a Cara" (Salseo):** Si haces clic en el nombre de otro usuario en la tabla general, se abre un modal de "TÚ vs RIVAL" comparando vuestras predicciones para los próximos 5 partidos.
+- **Feed de Actividad (En Directo):** En el panel de control ahora hay un feed estilo "Twitter" que muestra avisos en tiempo real cuando la base de datos se actualiza.
+
 ---
 *¡Revisa el código cuando quieras! Esta rama está pensada para ser una propuesta abierta a cambios.*

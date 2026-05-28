@@ -176,6 +176,7 @@ async function handleRealtime(){
     await loadAllData();
     renderPage(currentPage);
     applySidebarProfile();
+    if(typeof logActivity === 'function') logActivity("🔄 Alguien ha guardado un cambio. ¡Datos actualizados!");
   }, 600);
 }
 
@@ -383,13 +384,13 @@ function renderPage(page){
 // ===================== SCORING =====================
 function calcScore(uid){
   const preds = cache.predicciones[uid] || {};
-  let grupos=0, r32=0, octavos=0, cuartos=0, semis=0, final_=0, campeon_=0, sub=0, customPts=0;
+  let grupos=0, r32=0, octavos=0, cuartos=0, semis=0, final_=0, campeon_=0, sub=0, customPts=0, exactMatches=0;
   const gPreds = preds.grupos||{}, gRes = cache.resultados.grupos||{};
   for(const key in gPreds){
     const p=gPreds[key], r=gRes[key];
     if(!r||r.gl===''||r.gl===undefined) continue;
     const pg=parseInt(p.gl), pv=parseInt(p.gv), rg=parseInt(r.gl), rv=parseInt(r.gv);
-    if(pg===rg&&pv===rv){ grupos+=3; continue; }
+    if(pg===rg&&pv===rv){ grupos+=3; exactMatches++; continue; }
     const pw=pg>pv?'L':pg<pv?'V':'D', rw=rg>rv?'L':rg<rv?'V':'D';
     if(pw===rw) grupos+=1;
   }
@@ -417,7 +418,7 @@ function calcScore(uid){
     }
   });
 
-  return {grupos,r32,octavos,cuartos,semis,final:final_,campeon:campeon_,sub,customPts,total:grupos+r32+octavos+cuartos+semis+final_+campeon_+sub+customPts};
+  return {grupos,r32,octavos,cuartos,semis,final:final_,campeon:campeon_,sub,customPts,total:grupos+r32+octavos+cuartos+semis+final_+campeon_+sub+customPts,exactMatches};
 }
 
 // ===================== DASHBOARD =====================
@@ -434,7 +435,8 @@ function renderDashboard(){
       const pos=i+1, bc=pos===1?'pos-1':pos===2?'pos-2':pos===3?'pos-3':'pos-n';
       const youMark=p.id===getMyId()?'<span class="you-badge">yo</span>':'';
       const adminMark=p.isAdmin?'<span class="admin-tag">👑</span>':'';
-      return `<tr><td><span class="pos-badge ${bc}">${pos}</span></td><td class="name-col">${p.name}${youMark}${adminMark}</td><td class="pts-col">${p.grupos}</td><td>${p.r32+p.octavos+p.cuartos+p.semis+p.final}</td><td style="color:var(--accent2)">${p.campeon}</td><td class="pts-col" style="font-size:18px">${p.total}</td></tr>`;
+      const fireMark=p.exactMatches>=3?`<span title="${p.exactMatches} resultados exactos" style="margin-left:5px;font-size:14px;animation:pulse 2s infinite">🔥</span>`:'';
+      return `<tr style="cursor:pointer" onclick="openVsModal('${p.id}')"><td><span class="pos-badge ${bc}">${pos}</span></td><td class="name-col">${p.name}${youMark}${adminMark}${fireMark}</td><td class="pts-col">${p.grupos}</td><td>${p.r32+p.octavos+p.cuartos+p.semis+p.final}</td><td style="color:var(--accent2)">${p.campeon}</td><td class="pts-col" style="font-size:18px">${p.total}</td></tr>`;
     }).join('');
   }
   renderNextMatches();
@@ -563,7 +565,8 @@ function renderGruposPred(){
         }
         predHtml=`<span class="${cls}">${preds.gl}–${preds.gv} ${label}<span class="pts-earned">${pts}</span></span>`;
       } else { predHtml=renderPredInputsHtml(key); }
-      html+=`<div class="match-row"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div></div><div class="team-block"><div class="team-name-match">${m.local}</div></div><div class="score-center">${hasRes?`<div class="score-display">${res.gl}–${res.gv}</div>`:'<div class="score-vs">VS</div>'}<div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${m.visitante}</div></div><div class="pred-block"><div class="pred-label">Tu predicción</div>${predHtml}</div></div>`;
+      const isFilled = preds&&preds.gl!==''&&preds.gl!==undefined;
+      html+=`<div class="match-row ${isFilled ? 'has-pred' : ''}"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div></div><div class="team-block"><div class="team-name-match">${m.local}</div></div><div class="score-center">${hasRes?`<div class="score-display">${res.gl}–${res.gv}</div>`:'<div class="score-vs">VS</div>'}<div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${m.visitante}</div></div><div class="pred-block"><div class="pred-label">Tu predicción</div>${predHtml}</div></div>`;
     });
     html+='</div>';
   });
@@ -603,6 +606,124 @@ async function savePredGrupo(key){
   if(btn){ btn.classList.add('saved'); btn.disabled=true; }
   const { error } = await sb.from('predicciones_grupos').upsert({ participante_id:uid, match_key:key, goles_local:gl, goles_visitante:gv },{ onConflict:'participante_id,match_key' });
   if(error){ showToast('❌ Error al guardar'); } else { showToast('✅ Predicción guardada'); fireConfetti(); }
+}
+
+function toggleFilledMatches() {
+  const isHidden = document.getElementById('hide-filled-matches').checked;
+  const rows = document.querySelectorAll('.match-row.has-pred');
+  rows.forEach(r => r.style.display = isHidden ? 'none' : '');
+}
+
+async function magicFill() {
+  const uid = currentViewUser;
+  if (!uid) { showToast('Selecciona un participante primero'); return; }
+  
+  let emptyMatches = [];
+  GRUPOS.forEach(g => {
+    g.partidos.forEach(m => {
+      const key = `G${g.id}_${m.n}`;
+      const preds = ((cache.predicciones[uid] || {}).grupos || {})[key];
+      if (!preds || preds.gl === '' || preds.gl === undefined) {
+        // Parse date for sorting
+        const parts = m.fecha.split(' ');
+        const day = parseInt(parts[0]);
+        const month = parts[1].toLowerCase().startsWith('jun') ? 5 : 6;
+        const [h, min] = m.hora.split(':').map(Number);
+        const ts = new Date(2026, month, day, h, min).getTime();
+        emptyMatches.push({ key, ts });
+      }
+    });
+  });
+
+  if (emptyMatches.length === 0) {
+    showToast('¡Ya tienes todo rellenado!');
+    return;
+  }
+
+  // Sort chronologically and take only the next 12
+  emptyMatches.sort((a, b) => a.ts - b.ts);
+  const matchesToFill = emptyMatches.slice(0, 12);
+
+  showToast(`Rellenando próximos ${matchesToFill.length} partidos...`);
+  const upsertData = matchesToFill.map(match => {
+    const gl = Math.floor(Math.random() * 4); // 0 to 3
+    const gv = Math.floor(Math.random() * 4); // 0 to 3
+    
+    // Update UI optimistically
+    if (!cache.predicciones[uid]) cache.predicciones[uid] = { grupos: {}, elim: {}, especiales: {}, especialesTs: {} };
+    cache.predicciones[uid].grupos[match.key] = { gl, gv };
+    
+    return { participante_id: uid, match_key: match.key, goles_local: gl, goles_visitante: gv };
+  });
+
+  const { error } = await sb.from('predicciones_grupos').upsert(upsertData, { onConflict: 'participante_id,match_key' });
+  if (error) {
+    showToast('❌ Error al autocompletar');
+  } else {
+    showToast('🎲 ¡Todos los partidos rellenados!');
+    fireConfetti();
+    renderGruposPred();
+  }
+}
+
+function openVsModal(rivalId) {
+  const me = getMyId();
+  if(!me || me === rivalId) return;
+  const rival = cache.participantes.find(p=>p.id===rivalId);
+  if(!rival) return;
+
+  const m = document.getElementById('modal-content');
+  const overlay = document.getElementById('modal-overlay');
+  if(!m || !overlay) return;
+
+  let html = `<div style="text-align:center;margin-bottom:20px;font-family:'Outfit',sans-serif;font-size:24px;color:var(--text)">TÚ <span style="font-size:16px;color:var(--text3)">vs</span> <span style="color:var(--accent)">${rival.name}</span></div>`;
+  html += `<table style="width:100%;font-size:13px;text-align:center;border-collapse:collapse;background:var(--s2);border-radius:12px;overflow:hidden">
+            <tr style="background:var(--s1);color:var(--text3);font-weight:bold;font-size:11px"><td style="padding:10px">Partido</td><td style="padding:10px">Tú</td><td style="padding:10px">${rival.name}</td></tr>`;
+
+  let nextMatches = [];
+  GRUPOS.forEach(g => {
+    g.partidos.forEach(p => {
+      const key = `G${g.id}_${p.n}`;
+      if(!cache.resultados.grupos[key] || cache.resultados.grupos[key].gl==='') {
+        nextMatches.push({ ...p, key, id: g.id });
+      }
+    });
+  });
+  nextMatches = nextMatches.slice(0, 5);
+
+  nextMatches.forEach(match => {
+    const myPred = ((cache.predicciones[me]||{}).grupos||{})[match.key];
+    const rivalPred = ((cache.predicciones[rivalId]||{}).grupos||{})[match.key];
+    const myText = myPred && myPred.gl!=='' ? `${myPred.gl}-${myPred.gv}` : '-';
+    const rivalText = rivalPred && rivalPred.gl!=='' ? `${rivalPred.gl}-${rivalPred.gv}` : '🤔';
+    
+    html += `<tr style="border-bottom:1px solid var(--border2)">
+              <td style="padding:10px;text-align:left;color:var(--text)">${match.local} vs ${match.visitante}</td>
+              <td style="padding:10px;color:var(--accent);font-weight:bold">${myText}</td>
+              <td style="padding:10px;color:var(--text2);font-weight:bold">${rivalText}</td>
+             </tr>`;
+  });
+
+  html += `</table>`;
+  
+  m.innerHTML = `<div class="modal-header"><div class="modal-title">El Cara a Cara ⚔️</div><button class="modal-close" onclick="closeModal()">&times;</button></div>${html}`;
+  overlay.classList.add('open');
+}
+
+function logActivity(msg) {
+  const feed = document.getElementById('activity-feed');
+  if(!feed) return;
+  const item = document.createElement('div');
+  item.style.padding = "8px 12px";
+  item.style.background = "var(--s4)";
+  item.style.borderRadius = "8px";
+  item.style.animation = "fadeIn 0.3s";
+  item.innerHTML = `<span style="color:var(--text3);font-size:10px;margin-right:8px">${new Date().toLocaleTimeString()}</span> ${msg}`;
+  if(feed.children.length > 0 && feed.children[0].innerText.includes("Esperando")) {
+    feed.innerHTML = '';
+  }
+  feed.prepend(item);
+  if(feed.children.length > 30) feed.lastChild.remove();
 }
 
 // ===================== PRED ELIM =====================
