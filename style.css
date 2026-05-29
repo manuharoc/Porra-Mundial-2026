@@ -1147,7 +1147,7 @@ select.form-input { cursor: pointer; }
     content: '';
     display: inline-block;
     width: 36px; height: 36px;
-    background: url('logo-limpio2.png?v=12') center/contain no-repeat;
+    background: url('logo-limpio2.png?v=13') center/contain no-repeat;
     margin-right: 8px;
     vertical-align: middle;
     flex-shrink: 0;
@@ -1159,9 +1159,12 @@ select.form-input { cursor: pointer; }
     gap: 16px !important;
   }
   
-  /* Optimización de Normas en móvil (mostrar botones de edición sin hover) */
+  /* Optimización de Normas en móvil (mostrar botones de edición sin hover y scrollbar) */
   .rule-actions {
     opacity: 1 !important;
+  }
+  .pts-table {
+    min-width: 550px !important;
   }
   
   /* Optimización de Grupos en móvil (prevenir corte horizontal) */

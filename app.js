@@ -390,6 +390,8 @@ function showApp(){
   applySidebarProfile();
   renderDashboard();
   renderGruposTorneo();
+  renderParticipants();
+  renderRanking();
   currentPage = 'dashboard';
 }
 
@@ -708,6 +710,8 @@ async function addParticipant(){
   closeModal('modal-add');
   showToast('✅ '+name+' añadido');
   renderDashboard();
+  renderParticipants();
+  renderRanking();
 }
 
 function renderParticipants(){
@@ -734,7 +738,9 @@ async function deleteParticipant(uid){
   cache.participantes = cache.participantes.filter(p=>p.id!==uid);
   delete cache.predicciones[uid];
   if(currentViewUser===uid) currentViewUser=getMyId();
+  renderDashboard();
   renderParticipants();
+  renderRanking();
   showToast('Participante eliminado');
 }
 
@@ -2034,7 +2040,7 @@ function downloadImage(blob, filename) {
 // Register Service Worker (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=12')
+    navigator.serviceWorker.register('sw.js?v=13')
       .catch(e => console.warn('SW error:', e));
   });
 }
