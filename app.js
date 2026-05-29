@@ -1502,7 +1502,7 @@ function downloadImage(blob, filename) {
 // Register Service Worker (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=6')
+    navigator.serviceWorker.register('sw.js?v=7')
       .catch(e => console.warn('SW error:', e));
   });
 }

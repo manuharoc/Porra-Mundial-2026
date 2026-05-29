@@ -8,9 +8,9 @@
 <meta name="theme-color" content="#7b2cbf">
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=6">
-<link rel="apple-touch-icon" href="logo-limpio2.png?v=6">
-<link rel="icon" type="image/png" href="logo-limpio2.png?v=6">
+<link rel="manifest" href="manifest.json?v=7">
+<link rel="apple-touch-icon" href="logo-limpio2.png?v=7">
+<link rel="icon" type="image/png" href="logo-limpio2.png?v=7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Porra 2026">
@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -44,7 +44,7 @@
 <!-- ====== SETUP SCREEN ====== -->
 <div id="setup-screen" class="hidden">
   <div class="setup-card">
-    <div class="setup-logo"><img src="logo-limpio2.png?v=6" alt="Mundialista '26 Porra"></div>
+    <div class="setup-logo"><img src="logo-limpio2.png?v=7" alt="Mundialista '26 Porra"></div>
     <div class="setup-sub" style="margin-bottom:32px">USA · México · Canadá</div>
 
     <div class="setup-steps">
@@ -123,7 +123,7 @@
 <div class="shell">
   <aside class="sidebar">
     <div class="logo" onclick="goto('config')">
-      <img src="logo-limpio2.png?v=6" alt="Mundialista 26 Porra" style="width:72px;height:72px;object-fit:contain;margin-bottom:6px;display:block">
+      <img src="logo-limpio2.png?v=7" alt="Mundialista 26 Porra" style="width:90px;height:90px;object-fit:contain;margin-bottom:6px;display:block">
       <div class="logo-title" id="sidebar-liga-name">Mundial 2026</div>
       <div class="logo-sub">USA · México · Canadá</div>
       <div class="liga-code" onclick="copyLigaCode(event)" title="Copiar código">
@@ -137,7 +137,7 @@
     <button class="nav-item" onclick="goto('participantes')"><span class="icon">👥</span> Participantes</button>
 
     <div class="nav-section">Predicciones</div>
-    <button class="nav-item" onclick="goto('grupos-pred')"><span class="icon">📋</span> Fase de Grupos <span class="nav-count">72</span></button>
+    <button class="nav-item" onclick="goto('grupos-pred')"><span class="icon">📋</span> Partidos <span class="nav-count">72</span></button>
     <button class="nav-item" onclick="goto('eliminatorias-pred')"><span class="icon">⚡</span> Eliminatorias <span class="nav-count">32</span></button>
     <button class="nav-item" onclick="goto('especiales')"><span class="icon">🌟</span> Especiales</button>
 
@@ -164,7 +164,7 @@
       <div class="topbar">
         <div class="topbar-left">
           <div class="topbar-title" id="dash-title">
-            <img src="logo-limpio2.png?v=6" style="width:26px;height:26px;object-fit:contain;vertical-align:middle;margin-right:6px">
+            <img src="logo-limpio2.png?v=7" style="width:34px;height:34px;object-fit:contain;vertical-align:middle;margin-right:6px">
             <span id="dash-title-text">Porra Mundial 2026</span>
           </div>
           <div class="topbar-meta">Horarios en hora española (CEST) · 48 equipos · 12 grupos</div>
@@ -240,7 +240,7 @@
     <!-- GRUPOS PRED -->
     <div id="page-grupos-pred" class="page">
       <div class="topbar">
-        <div class="topbar-title">📋 Predicciones — Grupos</div>
+        <div class="topbar-title">📋 Predicciones — Partidos</div>
         <div class="topbar-right" style="display:flex;gap:15px;align-items:center;">
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;">
             <input type="checkbox" id="hide-filled-matches" onchange="toggleFilledMatches()"> Ocultar completados
@@ -523,7 +523,7 @@
   </button>
   <button class="bn-item" id="bn-grupos-pred" onclick="goto('grupos-pred')">
     <span class="bn-icon">📋</span>
-    <span class="bn-label">Grupos</span>
+    <span class="bn-label">Partidos</span>
   </button>
   <button class="bn-item" id="bn-eliminatorias-pred" onclick="goto('eliminatorias-pred')">
     <span class="bn-icon">⚡</span>
@@ -564,8 +564,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="data.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="data.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
 
