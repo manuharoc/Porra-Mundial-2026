@@ -497,14 +497,19 @@ function calcScore(uid){
   }
   const ePreds=preds.elim||{}, eRes=cache.resultados.elim||{};
   for(const code in ePreds){
-    const w=ePreds[code], r=eRes[code];
+    let w=ePreds[code];
+    const r=eRes[code];
     if(!r||!w) continue;
+    if (w.startsWith('{')) {
+      try { w = JSON.parse(w).ganador; } catch(e){}
+    }
+    if (w !== r) continue;
     const m=parseInt(code.replace('M',''));
-    if(m>=73&&m<=88&&w===r) r32+=4;
-    else if(m>=89&&m<=96&&w===r) octavos+=5;
-    else if(m>=97&&m<=100&&w===r) cuartos+=6;
-    else if((m===101||m===102)&&w===r) semis+=8;
-    else if(m===104&&w===r) final_+=10;
+    if(m>=73&&m<=88) r32+=4;
+    else if(m>=89&&m<=96) octavos+=5;
+    else if(m>=97&&m<=100) cuartos+=6;
+    else if((m===101||m===102)) semis+=8;
+    else if(m===104) final_+=10;
   }
   const esp=preds.especiales||{}, re=cache.resultados.especiales||{};
   if(esp.campeon&&re.campeon&&esp.campeon===re.campeon) campeon_+=20;
@@ -867,32 +872,345 @@ function logActivity(msg) {
   if(feed.children.length > 30) feed.lastChild.remove();
 }
 
+// ===================== PRED ELIM HELPERS =====================
+function findMatchInPhases(code) {
+  for (const phase of ELIM_PHASES) {
+    const m = phase.partidos.find(x => x.code === code);
+    if (m) return m;
+  }
+  return null;
+}
+
+function getPossibleTeamsForSlot(slot) {
+  if (!slot) return [];
+  if (slot.startsWith('W') || slot.startsWith('Perdedor') || slot.startsWith('Ganador')) {
+    return ALL_TEAMS;
+  }
+  const matches = slot.match(/[A-L]/g);
+  if (matches && matches.length > 0) {
+    const teams = [];
+    matches.forEach(letter => {
+      const g = GRUPOS.find(x => x.id === letter);
+      if (g) teams.push(...g.equipos);
+    });
+    return [...new Set(teams)].sort();
+  }
+  return ALL_TEAMS;
+}
+
+function resolveTeamForSlot(slot, uid) {
+  if (!uid) return slot;
+  const preds = cache.predicciones[uid] || {};
+  const elimPreds = preds.elim || {};
+
+  if (ALL_TEAMS.includes(slot)) return slot;
+
+  if (slot.startsWith('W')) {
+    const code = 'M' + slot.slice(1);
+    const predVal = elimPreds[code];
+    if (predVal) {
+      if (predVal.startsWith('{')) {
+        try { return JSON.parse(predVal).ganador || slot; } catch(e){}
+      }
+      return predVal;
+    }
+    return slot;
+  }
+
+  if (slot === 'Ganador SF1') {
+    const predVal = elimPreds['M101'];
+    if (predVal) {
+      if (predVal.startsWith('{')) {
+        try { return JSON.parse(predVal).ganador || slot; } catch(e){}
+      }
+      return predVal;
+    }
+    return slot;
+  }
+  if (slot === 'Ganador SF2') {
+    const predVal = elimPreds['M102'];
+    if (predVal) {
+      if (predVal.startsWith('{')) {
+        try { return JSON.parse(predVal).ganador || slot; } catch(e){}
+      }
+      return predVal;
+    }
+    return slot;
+  }
+  if (slot === 'Perdedor SF1') {
+    const predVal = elimPreds['M101'];
+    if (predVal) {
+      let winner = predVal;
+      let local = 'W97';
+      let visitante = 'W98';
+      if (predVal.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(predVal);
+          winner = parsed.ganador;
+          local = parsed.local;
+          visitante = parsed.visitante;
+        } catch(e){}
+      } else {
+        const m101 = findMatchInPhases('M101');
+        if (m101) {
+          local = resolveTeamForSlot(m101.local, uid);
+          visitante = resolveTeamForSlot(m101.visitante, uid);
+        }
+      }
+      return winner === local ? visitante : local;
+    }
+    return slot;
+  }
+  if (slot === 'Perdedor SF2') {
+    const predVal = elimPreds['M102'];
+    if (predVal) {
+      let winner = predVal;
+      let local = 'W99';
+      let visitante = 'W100';
+      if (predVal.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(parsed);
+          winner = parsed.ganador;
+          local = parsed.local;
+          visitante = parsed.visitante;
+        } catch(e){}
+      } else {
+        const m102 = findMatchInPhases('M102');
+        if (m102) {
+          local = resolveTeamForSlot(m102.local, uid);
+          visitante = resolveTeamForSlot(m102.visitante, uid);
+        }
+      }
+      return winner === local ? visitante : local;
+    }
+    return slot;
+  }
+  return slot;
+}
+
+function resolveActualTeamForSlot(slot) {
+  if (ALL_TEAMS.includes(slot)) return slot;
+
+  const elimRes = cache.resultados.elim || {};
+
+  if (slot.startsWith('W')) {
+    const code = 'M' + slot.slice(1);
+    return elimRes[code] || slot;
+  }
+  if (slot === 'Ganador SF1') return elimRes['M101'] || slot;
+  if (slot === 'Ganador SF2') return elimRes['M102'] || slot;
+  if (slot === 'Perdedor SF1') {
+    const winner = elimRes['M101'];
+    if (winner) {
+      const m101 = findMatchInPhases('M101');
+      if (m101) {
+        const local = resolveActualTeamForSlot(m101.local);
+        const visitante = resolveActualTeamForSlot(m101.visitante);
+        return winner === local ? visitante : local;
+      }
+    }
+    return slot;
+  }
+  if (slot === 'Perdedor SF2') {
+    const winner = elimRes['M102'];
+    if (winner) {
+      const m102 = findMatchInPhases('M102');
+      if (m102) {
+        const local = resolveActualTeamForSlot(m102.local);
+        const visitante = resolveActualTeamForSlot(m102.visitante);
+        return winner === local ? visitante : local;
+      }
+    }
+    return slot;
+  }
+  return slot;
+}
+
+function updateWinnerDropdown(code) {
+  const localEl = document.getElementById('local-' + code);
+  const visitanteEl = document.getElementById('visitante-' + code);
+  const winnerEl = document.getElementById('winner-' + code);
+  if (!winnerEl) return;
+
+  const localVal = localEl ? (localEl.value || localEl.textContent || '').trim() : '';
+  const visitanteVal = visitanteEl ? (visitanteEl.value || visitanteEl.textContent || '').trim() : '';
+
+  const curWinner = winnerEl.value;
+
+  winnerEl.innerHTML = `
+    <option value="">— Ganador —</option>
+    ${localVal && ALL_TEAMS.includes(localVal) ? `<option value="${localVal}">${localVal}</option>` : ''}
+    ${visitanteVal && ALL_TEAMS.includes(visitanteVal) ? `<option value="${visitanteVal}">${visitanteVal}</option>` : ''}
+  `;
+  if (curWinner === localVal || curWinner === visitanteVal) {
+    winnerEl.value = curWinner;
+  } else {
+    winnerEl.value = '';
+  }
+}
+
+function handleElimGoalsChange(code) {
+  const glEl = document.getElementById('gl-' + code);
+  const gvEl = document.getElementById('gv-' + code);
+  const winnerEl = document.getElementById('winner-' + code);
+  if (!glEl || !gvEl || !winnerEl) return;
+
+  const glVal = glEl.value;
+  const gvVal = gvEl.value;
+  if (glVal !== '' && gvVal !== '') {
+    const gl = parseInt(glVal);
+    const gv = parseInt(gvVal);
+    const localEl = document.getElementById('local-' + code);
+    const visitanteEl = document.getElementById('visitante-' + code);
+    const localVal = localEl ? (localEl.value || localEl.textContent || '').trim() : '';
+    const visitanteVal = visitanteEl ? (visitanteEl.value || visitanteEl.textContent || '').trim() : '';
+
+    if (gl > gv && localVal && ALL_TEAMS.includes(localVal)) {
+      winnerEl.value = localVal;
+    } else if (gl < gv && visitanteVal && ALL_TEAMS.includes(visitanteVal)) {
+      winnerEl.value = visitanteVal;
+    }
+  }
+  saveElimPredRow(code);
+}
+
+async function saveElimPredRow(code) {
+  const uid = currentViewUser;
+  if (!uid) { showToast('Selecciona un participante primero'); return; }
+
+  const localEl = document.getElementById('local-' + code);
+  const visitanteEl = document.getElementById('visitante-' + code);
+  const glEl = document.getElementById('gl-' + code);
+  const gvEl = document.getElementById('gv-' + code);
+  const winnerEl = document.getElementById('winner-' + code);
+
+  const local = localEl ? (localEl.value || localEl.textContent || '').trim() : '';
+  const visitante = visitanteEl ? (visitanteEl.value || visitanteEl.textContent || '').trim() : '';
+  const gl = glEl && glEl.value !== '' ? parseInt(glEl.value) : null;
+  const gv = gvEl && gvEl.value !== '' ? parseInt(gvEl.value) : null;
+  const ganador = winnerEl ? winnerEl.value : '';
+
+  if (!cache.predicciones[uid]) cache.predicciones[uid] = { grupos:{}, elim:{}, especiales:{}, especialesTs:{} };
+
+  const data = { local, visitante, goles_local: gl, goles_visitante: gv, ganador };
+  const jsonStr = JSON.stringify(data);
+  cache.predicciones[uid].elim[code] = jsonStr;
+
+  const { error } = await sb.from('predicciones_elim').upsert({
+    participante_id: uid,
+    match_code: code,
+    ganador: jsonStr
+  }, { onConflict: 'participante_id,match_code' });
+
+  if (error) {
+    showToast('❌ Error al guardar');
+  } else {
+    showToast('✅ Guardado');
+    renderElimPred();
+  }
+}
+
 // ===================== PRED ELIM =====================
 function renderElimPred(){
   const c=document.getElementById('elim-pred-content');
   if(!c) return;
   document.getElementById('pred-user-selector-elim').innerHTML=renderUserSelector('switchPredUserElim');
   if(!cache.participantes.length){ c.innerHTML='<div class="empty-state"><div class="ei">👥</div><p>Añade participantes primero.</p></div>'; return; }
+  
+  const uid=currentViewUser;
   let html='';
+  
   ELIM_PHASES.forEach(phase=>{
     html+=`<div class="bracket-phase"><div class="bracket-phase-title">${phase.name}</div>`;
     phase.partidos.forEach(m=>{
-      const uid=currentViewUser, preds=uid?(((cache.predicciones[uid]||{}).elim||{})[m.code]):null;
+      const predVal = uid ? (((cache.predicciones[uid]||{}).elim||{})[m.code]) : null;
+      let predLocal = '';
+      let predVisitante = '';
+      let predGl = '';
+      let predGv = '';
+      let predWinner = '';
+
+      if (predVal) {
+        if (predVal.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(predVal);
+            predLocal = parsed.local || '';
+            predVisitante = parsed.visitante || '';
+            predGl = parsed.goles_local !== undefined && parsed.goles_local !== null ? parsed.goles_local : '';
+            predGv = parsed.goles_visitante !== undefined && parsed.goles_visitante !== null ? parsed.goles_visitante : '';
+            predWinner = parsed.ganador || '';
+          } catch(e) {
+            predWinner = predVal;
+          }
+        } else {
+          predWinner = predVal;
+        }
+      }
+
+      const resolvedLocalDefault = resolveTeamForSlot(m.local, uid);
+      const resolvedVisitanteDefault = resolveTeamForSlot(m.visitante, uid);
+
+      const displayLocal = predLocal || resolvedLocalDefault;
+      const displayVisitante = predVisitante || resolvedVisitanteDefault;
+
+      const isLocalSelect = !m.local.startsWith('W') && !m.local.startsWith('Ganador') && !m.local.startsWith('Perdedor');
+      const isVisitanteSelect = !m.visitante.startsWith('W') && !m.visitante.startsWith('Ganador') && !m.visitante.startsWith('Perdedor');
+
+      const possibleLocals = getPossibleTeamsForSlot(m.local);
+      const possibleVisitantes = getPossibleTeamsForSlot(m.visitante);
+
+      let localHtml = '';
+      if (isLocalSelect) {
+        localHtml = `
+          <select id="local-${m.code}" class="winner-select" style="font-weight:700" onchange="updateWinnerDropdown('${m.code}'); saveElimPredRow('${m.code}');">
+            <option value="">— ${m.local} —</option>
+            ${possibleLocals.map(t => `<option value="${t}" ${displayLocal === t ? 'selected' : ''}>${t}</option>`).join('')}
+          </select>
+        `;
+      } else {
+        localHtml = `
+          <div id="local-${m.code}" class="elim-team-label" style="font-weight:700">${displayLocal}</div>
+        `;
+      }
+
+      let visitanteHtml = '';
+      if (isVisitanteSelect) {
+        visitanteHtml = `
+          <select id="visitante-${m.code}" class="winner-select" style="font-weight:700; text-align:right" onchange="updateWinnerDropdown('${m.code}'); saveElimPredRow('${m.code}');">
+            <option value="">— ${m.visitante} —</option>
+            ${possibleVisitantes.map(t => `<option value="${t}" ${displayVisitante === t ? 'selected' : ''}>${t}</option>`).join('')}
+          </select>
+        `;
+      } else {
+        visitanteHtml = `
+          <div id="visitante-${m.code}" class="elim-team-label" style="font-weight:700; text-align:right">${displayVisitante}</div>
+        `;
+      }
+
       const res=(cache.resultados.elim||{})[m.code];
-      html+=`<div class="elim-row"><div class="match-code">${m.code}<br><span style="font-size:10px;color:var(--text3)">${m.fecha}</span></div><div class="elim-team">${m.local}</div><div class="elim-vs">${res||'VS'}</div><div class="elim-team" style="text-align:right">${m.visitante}</div><div class="elim-winner-block"><span class="elim-winner-label">Ganador:</span><select class="winner-select ${preds?'chosen':''}" onchange="savePredElim('${m.code}',this.value)"><option value="">—</option><option value="${m.local}" ${preds===m.local?'selected':''}>${m.local}</option><option value="${m.visitante}" ${preds===m.visitante?'selected':''}>${m.visitante}</option></select></div></div>`;
+      const vsText = res ? `<span class="sa-result-tag">✓ ${res}</span>` : 'VS';
+
+      html+=`
+        <div class="elim-row">
+          <div class="match-code">${m.code}<br><span style="font-size:10px;color:var(--text3)">${m.fecha}</span></div>
+          ${localHtml}
+          <input type="number" min="0" placeholder="-" id="gl-${m.code}" class="elim-score-inp" value="${predGl}" oninput="handleElimGoalsChange('${m.code}')">
+          <div class="elim-vs">${vsText}</div>
+          <input type="number" min="0" placeholder="-" id="gv-${m.code}" class="elim-score-inp" value="${predGv}" oninput="handleElimGoalsChange('${m.code}')">
+          ${visitanteHtml}
+          <div class="elim-winner-block">
+            <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" onchange="saveElimPredRow('${m.code}')">
+              <option value="">— Ganador —</option>
+              ${displayLocal && ALL_TEAMS.includes(displayLocal) ? `<option value="${displayLocal}" ${predWinner === displayLocal ? 'selected' : ''}>${displayLocal}</option>` : ''}
+              ${displayVisitante && ALL_TEAMS.includes(displayVisitante) ? `<option value="${displayVisitante}" ${predWinner === displayVisitante ? 'selected' : ''}>${displayVisitante}</option>` : ''}
+            </select>
+          </div>
+        </div>
+      `;
     });
     html+='</div>';
   });
   c.innerHTML=html;
-}
-
-async function savePredElim(code, winner){
-  const uid=currentViewUser;
-  if(!uid){ showToast('Selecciona un participante primero'); return; }
-  if(!cache.predicciones[uid]) cache.predicciones[uid]={grupos:{},elim:{},especiales:{},especialesTs:{}};
-  cache.predicciones[uid].elim[code]=winner;
-  const { error } = await sb.from('predicciones_elim').upsert({ participante_id:uid, match_code:code, ganador:winner },{ onConflict:'participante_id,match_code' });
-  if(error){ showToast('❌ Error al guardar'); } else { showToast('✅ Predicción guardada'); fireConfetti(); }
 }
 
 // ===================== ESPECIALES =====================
@@ -1288,17 +1606,19 @@ function renderSuperadmin(res){
   ELIM_PHASES.forEach(phase=>{
     html += `<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin:10px 0 6px">${phase.name}</div>`;
     phase.partidos.forEach(m=>{
+      const localResolved = resolveActualTeamForSlot(m.local);
+      const visitanteResolved = resolveActualTeamForSlot(m.visitante);
       const cur = (res.elim||{})[m.code];
       html += `<div class="sa-row">
         <div>
-          <div class="sa-match-info">${m.code}: ${m.local} vs ${m.visitante} ${cur?`<span class="sa-result-tag">✓ ${cur}</span>`:''}</div>
+          <div class="sa-match-info">${m.code}: ${localResolved} vs ${visitanteResolved} ${cur?`<span class="sa-result-tag">✓ ${cur}</span>`:''}</div>
           <div class="sa-match-sub">${m.fecha} · ${m.hora} · ${m.sede}</div>
         </div>
         <div class="sa-inputs">
           <select class="sa-select" id="sa_elim_${m.code}">
             <option value="">— Clasificado —</option>
-            <option value="${m.local}" ${cur===m.local?'selected':''}>${m.local}</option>
-            <option value="${m.visitante}" ${cur===m.visitante?'selected':''}>${m.visitante}</option>
+            <option value="${localResolved}" ${cur===localResolved?'selected':''}>${localResolved}</option>
+            <option value="${visitanteResolved}" ${cur===visitanteResolved?'selected':''}>${visitanteResolved}</option>
           </select>
           <button class="sa-save" onclick="saveGlobalElim('${m.code}')">Guardar</button>
         </div>
@@ -1502,7 +1822,7 @@ function downloadImage(blob, filename) {
 // Register Service Worker (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=7')
+    navigator.serviceWorker.register('sw.js?v=8')
       .catch(e => console.warn('SW error:', e));
   });
 }
