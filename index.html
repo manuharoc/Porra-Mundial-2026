@@ -205,17 +205,20 @@
     <!-- RANKING -->
     <div id="page-ranking" class="page">
       <div class="topbar">
-        <div class="topbar-title">🏆 Clasificación General</div>
-        <div class="topbar-right"><button class="btn btn-accent" onclick="shareRanking()">📸 Compartir WhatsApp</button></div>
+        <div class="topbar-title">🏆 Clasificación</div>
+        <div class="topbar-right"><button class="btn btn-accent" onclick="shareRanking()">📸 WhatsApp</button></div>
       </div>
       <div style="padding:24px">
-        <div class="table-wrap">
+        <!-- Vista desktop: tabla completa -->
+        <div class="table-wrap ranking-desktop">
           <div class="table-header"><div class="table-title">Puntuación total</div><div style="font-size:12px;color:var(--text3)"><span class="realtime-dot"></span>Actualizada en tiempo real</div></div>
           <table>
             <thead><tr><th>#</th><th>Participante</th><th>Grupos</th><th>R32</th><th>Octavos</th><th>Cuartos</th><th>Semis</th><th>Final</th><th>Campeón</th><th>Sub</th><th>TOTAL</th></tr></thead>
             <tbody id="full-ranking-body"></tbody>
           </table>
         </div>
+        <!-- Vista móvil: cards -->
+        <div class="ranking-mobile-list" id="ranking-mobile-list"></div>
       </div>
     </div>
 
@@ -498,6 +501,54 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ====== BOTTOM NAV (móvil) ====== -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bn-item active" id="bn-dashboard" onclick="goto('dashboard')">
+    <span class="bn-icon">🏠</span>
+    <span class="bn-label">Inicio</span>
+  </button>
+  <button class="bn-item" id="bn-ranking" onclick="goto('ranking')">
+    <span class="bn-icon">🏆</span>
+    <span class="bn-label">Ranking</span>
+  </button>
+  <button class="bn-item" id="bn-grupos-pred" onclick="goto('grupos-pred')">
+    <span class="bn-icon">📋</span>
+    <span class="bn-label">Grupos</span>
+  </button>
+  <button class="bn-item" id="bn-eliminatorias-pred" onclick="goto('eliminatorias-pred')">
+    <span class="bn-icon">⚡</span>
+    <span class="bn-label">Elim.</span>
+  </button>
+  <button class="bn-item" id="bn-more" onclick="toggleMobileMenu()">
+    <span class="bn-icon">☰</span>
+    <span class="bn-label">Más</span>
+  </button>
+</nav>
+
+<!-- ====== MOBILE MENU DRAWER (más opciones) ====== -->
+<div class="mobile-menu-overlay" id="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+<div class="mobile-menu-drawer" id="mobile-menu-drawer">
+  <div class="mobile-menu-header">
+    <div style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:var(--text)" id="mobile-liga-name">Mundial 2026</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:2px" id="mobile-liga-code-wrap">🔑 <span id="mobile-liga-code">—</span></div>
+  </div>
+  <button class="mobile-menu-item" onclick="closeMobileMenu();goto('participantes')">
+    <span>👥</span> Participantes
+  </button>
+  <button class="mobile-menu-item" onclick="closeMobileMenu();goto('especiales')">
+    <span>🌟</span> Especiales
+  </button>
+  <button class="mobile-menu-item" onclick="closeMobileMenu();goto('grupos-torneo')">
+    <span>🗂️</span> Grupos del Torneo
+  </button>
+  <button class="mobile-menu-item" onclick="closeMobileMenu();goto('normas')">
+    <span>📜</span> Normas
+  </button>
+  <button class="mobile-menu-item" onclick="closeMobileMenu();goto('config')">
+    <span>⚙️</span> Configuración
+  </button>
+</div>
 
 <!-- Supabase CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

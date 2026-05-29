@@ -361,6 +361,11 @@ function applySidebarProfile(){
   if(el) el.textContent = '⚽ '+ligaName;
   const codeEl = document.getElementById('sidebar-liga-code');
   if(codeEl) codeEl.textContent = cache.liga?.codigo || '—';
+  // Actualizar cabecera del drawer móvil
+  const mLiga = document.getElementById('mobile-liga-name');
+  if(mLiga) mLiga.textContent = ligaName;
+  const mCode = document.getElementById('mobile-liga-code');
+  if(mCode) mCode.textContent = cache.liga?.codigo || '—';
   const me = cache.participantes.find(p=>p.id===getMyId());
   if(me){
     const wrap = document.getElementById('sidebar-avatar-wrap');
@@ -378,14 +383,30 @@ function copyLigaCode(e){
 }
 
 // ===================== NAV =====================
+// Bottom nav pages que tienen botón directo
+const BOTTOM_NAV_PAGES = ['dashboard','ranking','grupos-pred','eliminatorias-pred'];
+
 function goto(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const el = document.getElementById('page-'+page);
   if(el) el.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(b=>{ if(b.getAttribute('onclick')==="goto('"+page+"')") b.classList.add('active'); });
+  // Actualizar bottom nav móvil
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  const bnEl = document.getElementById('bn-'+page);
+  if(bnEl) bnEl.classList.add('active');
+  // Si la página no está en el bottom nav principal, marcar el botón 'Más'
+  if(!BOTTOM_NAV_PAGES.includes(page)){
+    const bnMore = document.getElementById('bn-more');
+    if(bnMore) bnMore.classList.add('active');
+  }
   currentPage = page;
   renderPage(page);
+  // Scroll al inicio
+  const mainEl = document.querySelector('.main');
+  if(mainEl) mainEl.scrollTo(0,0);
+  window.scrollTo(0,0);
 }
 
 function renderPage(page){
@@ -395,6 +416,28 @@ function renderPage(page){
     'grupos-torneo':renderGruposTorneo, normas:renderNormas, config:renderConfig
   };
   if(map[page]) map[page]();
+}
+
+// ===================== MOBILE MENU =====================
+function toggleMobileMenu(){
+  const overlay = document.getElementById('mobile-menu-overlay');
+  const drawer = document.getElementById('mobile-menu-drawer');
+  if(!overlay || !drawer) return;
+  const isOpen = drawer.classList.contains('open');
+  if(isOpen){ closeMobileMenu(); } else { openMobileMenu(); }
+}
+
+function openMobileMenu(){
+  document.getElementById('mobile-menu-overlay')?.classList.add('open');
+  document.getElementById('mobile-menu-drawer')?.classList.add('open');
+  // Evitar scroll del body mientras está abierto
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMobileMenu(){
+  document.getElementById('mobile-menu-overlay')?.classList.remove('open');
+  document.getElementById('mobile-menu-drawer')?.classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // ===================== BONUS RONDAS =====================
@@ -525,12 +568,42 @@ function renderRanking(){
   const scores = cache.participantes.map(p=>({...p,...calcScore(p.id)})).sort((a,b)=>b.total-a.total);
   const tbody = document.getElementById('full-ranking-body');
   if(!tbody) return;
-  if(!scores.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:28px">Sin participantes</td></tr>'; return; }
+
+  if(!scores.length){
+    tbody.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:28px">Sin participantes</td></tr>';
+    const mob = document.getElementById('ranking-mobile-list');
+    if(mob) mob.innerHTML='<div class="empty-state"><div class="ei">🏆</div><p>Sin participantes aún.</p></div>';
+    return;
+  }
+
+  // ---- Desktop tabla ----
   tbody.innerHTML = scores.map((p,i)=>{
     const pos=i+1, bc=pos===1?'pos-1':pos===2?'pos-2':pos===3?'pos-3':'pos-n';
     const youMark=p.id===getMyId()?'<span class="you-badge">yo</span>':'';
     const adminMark=p.isAdmin?'<span class="admin-tag">👑</span>':'';
     return `<tr><td><span class="pos-badge ${bc}">${pos}</span></td><td class="name-col">${p.name}${youMark}${adminMark}</td><td class="pts-col">${p.grupos}</td><td>${p.r32}</td><td>${p.octavos}</td><td>${p.cuartos}</td><td>${p.semis}</td><td>${p.final}</td><td style="color:var(--accent2)">${p.campeon}</td><td>${p.sub}</td><td class="pts-col" style="font-size:18px">${p.total}</td></tr>`;
+  }).join('');
+
+  // ---- Móvil cards ----
+  const mob = document.getElementById('ranking-mobile-list');
+  if(!mob) return;
+  const medals = ['🥇','🥈','🥉'];
+  mob.innerHTML = scores.map((p,i)=>{
+    const pos=i+1;
+    const topClass = pos<=3 ? 'top-'+pos : '';
+    const posLabel = medals[i] || `<span style="font-size:14px;color:var(--text3)">${pos}</span>`;
+    const youMark = p.id===getMyId() ? '<span class="you-badge">yo</span>' : '';
+    const adminMark = p.isAdmin ? '👑 ' : '';
+    const esp = ((cache.predicciones[p.id]||{}).especiales)||{};
+    const champStr = esp.campeon ? `🏆 ${esp.campeon}` : '';
+    return `<div class="ranking-card ${topClass}">
+      <div class="rc-pos">${posLabel}</div>
+      <div class="rc-info">
+        <div class="rc-name">${adminMark}${p.name}${youMark}</div>
+        <div class="rc-detail">Grupos: <b>${p.grupos}</b> · Elim: <b>${p.r32+p.octavos+p.cuartos+p.semis+p.final}</b> · Esp: <b>${p.campeon+p.sub}</b>${champStr?' · '+champStr:''}</div>
+      </div>
+      <div class="rc-pts">${p.total}<span> pts</span></div>
+    </div>`;
   }).join('');
 }
 

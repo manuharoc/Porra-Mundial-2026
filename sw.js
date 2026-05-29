@@ -1,9 +1,12 @@
-const CACHE = 'porra2026-v1';
+const CACHE = 'porra2026-v3';
 const OFFLINE_ASSETS = [
   '/',
   '/index.html',
-  '/icon-512.png',
-  '/manifest.json'
+  '/logo-limpio2.png',
+  '/manifest.json',
+  '/style.css',
+  '/app.js',
+  '/data.js'
 ];
 
 // Install: pre-cache the shell

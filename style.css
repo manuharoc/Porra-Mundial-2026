@@ -306,17 +306,286 @@ select.form-input{cursor:pointer}
 .sa-inp-text:focus{outline:none;border-color:var(--accent)}
 .sa-result-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px;background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.25);white-space:nowrap}
 
+
+/* =============================================
+   BOTTOM NAV — Solo visible en móvil
+   ============================================= */
+.bottom-nav{display:none}
+.mobile-menu-overlay{display:none}
+.mobile-menu-drawer{display:none}
+/* Ranking: desktop tabla visible, mobile cards ocultas */
+.ranking-desktop{display:block}
+.ranking-mobile-list{display:none}
+/* Ranking cards móvil */
+.ranking-card{display:flex;align-items:center;gap:12px;background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:8px;transition:all .15s}
+.ranking-card.top-1{border-color:rgba(208,140,255,0.4);background:rgba(123,44,191,0.08)}
+.ranking-card.top-2{border-color:rgba(148,163,184,0.3)}
+.ranking-card.top-3{border-color:rgba(205,124,58,0.3)}
+.rc-pos{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;width:32px;text-align:center;flex-shrink:0}
+.rc-info{flex:1;min-width:0}
+.rc-name{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.rc-detail{font-size:11px;color:var(--text3);margin-top:2px}
+.rc-pts{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;color:var(--accent);flex-shrink:0}
+.rc-pts span{font-size:12px;font-weight:400;color:var(--text3)}
+
+/* =============================================
+   TABLET (≤960px)
+   ============================================= */
 @media(max-width:960px){
+  /* Layout */
   .shell{grid-template-columns:1fr}
-  .sidebar{backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);box-shadow:var(--shadow);display:none}
+  .sidebar{display:none}
   .groups-grid{grid-template-columns:1fr}
-  .match-row{backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);box-shadow:var(--shadow);grid-template-columns:70px 1fr auto 1fr;font-size:12px}
-  .match-row .pred-block{display:none}
-  .participants-grid{grid-template-columns:1fr 1fr}
   .rules-layout{grid-template-columns:1fr}
   .hero-grid{grid-template-columns:1fr 1fr}
-  .special-grid{grid-template-columns:1fr}
-  .elim-row{backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);box-shadow:var(--shadow);grid-template-columns:55px 1fr 36px 1fr}
+  .special-grid{grid-template-columns:1fr 1fr}
+  .participants-grid{grid-template-columns:repeat(3,1fr)}
+
+  /* Match rows en tablet */
+  .match-row{grid-template-columns:70px 1fr auto 1fr;font-size:12px}
+  .match-row .pred-block{display:none}
+
+  /* Elim rows en tablet */
+  .elim-row{grid-template-columns:55px 1fr 36px 1fr}
   .elim-row .elim-winner-block{display:none}
+
+  /* Settings */
   .settings-section .field-row{grid-template-columns:1fr}
 }
+
+/* =============================================
+   MÓVIL (≤768px) — Activar bottom nav
+   ============================================= */
+@media(max-width:768px){
+
+  /* ---- Bottom Nav ---- */
+  .bottom-nav{
+    display:flex;
+    position:fixed;
+    bottom:0;left:0;right:0;
+    height:62px;
+    background:linear-gradient(180deg,rgba(16,0,43,0.97),rgba(24,4,60,0.99));
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border-top:1px solid var(--border2);
+    z-index:200;
+    padding:0;
+    padding-bottom:env(safe-area-inset-bottom);
+    align-items:stretch;
+    justify-content:space-around;
+    box-shadow:0 -4px 20px rgba(0,0,0,0.4);
+  }
+  .bn-item{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;flex:1;
+    border:none;background:none;cursor:pointer;
+    color:var(--text3);
+    transition:color .15s,transform .1s;
+    padding:6px 4px;
+    border-radius:0;
+    font-family:inherit;
+  }
+  .bn-item:active{transform:scale(0.92)}
+  .bn-item.active{color:var(--accent)}
+  .bn-item.active .bn-icon{
+    background:rgba(123,44,191,0.15);
+    border-radius:12px;
+    box-shadow:0 0 12px rgba(123,44,191,0.3);
+  }
+  .bn-icon{
+    font-size:20px;
+    width:36px;height:28px;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s;
+    border-radius:12px;
+  }
+  .bn-label{font-size:10px;font-weight:600;letter-spacing:.2px}
+
+  /* ---- Mobile Menu Drawer ---- */
+  .mobile-menu-overlay{
+    display:block;
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.6);
+    z-index:300;
+    opacity:0;pointer-events:none;
+    transition:opacity .25s;
+    backdrop-filter:blur(3px);
+  }
+  .mobile-menu-overlay.open{opacity:1;pointer-events:all}
+  .mobile-menu-drawer{
+    display:flex;flex-direction:column;
+    position:fixed;
+    bottom:62px;left:0;right:0;
+    background:linear-gradient(160deg,#10002b,#240046);
+    border:1px solid var(--border2);
+    border-bottom:none;
+    border-radius:20px 20px 0 0;
+    z-index:301;
+    padding:0 0 8px;
+    transform:translateY(100%);
+    transition:transform .3s cubic-bezier(0.16,1,0.3,1);
+    box-shadow:0 -8px 32px rgba(0,0,0,0.5);
+  }
+  .mobile-menu-drawer.open{transform:translateY(0)}
+  .mobile-menu-header{
+    padding:16px 20px 12px;
+    border-bottom:1px solid var(--border2);
+    margin-bottom:4px;
+  }
+  .mobile-menu-item{
+    display:flex;align-items:center;gap:14px;
+    width:100%;border:none;background:none;
+    color:var(--text2);font-size:15px;font-weight:500;
+    padding:13px 20px;cursor:pointer;
+    text-align:left;font-family:inherit;
+    border-radius:0;
+    transition:background .15s,color .15s;
+  }
+  .mobile-menu-item:active{background:var(--s3);color:var(--text)}
+  .mobile-menu-item span{font-size:20px;width:28px;text-align:center}
+
+  /* ---- Shell & Main ---- */
+  /* display:block + sin height fija: el body hace el scroll normal */
+  .shell{display:flex;flex-direction:column;min-height:100vh}
+  .main{overflow:visible;height:auto;flex:1}
+  /* Espacio para la bottom nav fija (62px) + margen extra */
+  body{padding-bottom:72px}
+  /* Las pages usan padding reducido en móvil */
+  .page,.page.active{padding:12px !important}
+
+  /* ---- Setup Card ---- */
+  .setup-card{padding:24px 20px;margin:0 4px}
+  .setup-logo img{width:120px;height:120px}
+
+  /* ---- Topbar ---- */
+  .topbar{padding:10px 14px;flex-wrap:nowrap;gap:8px;position:sticky;top:0}
+  .topbar-title{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar-meta{font-size:10px;display:none}
+  /* Ocultar texto de botones del topbar, dejar solo icono/emoji */
+  .topbar-right{flex-shrink:0}
+  .topbar-right .btn{padding:7px 10px;font-size:12px}
+
+  /* ---- Hero Stats ---- */
+  .hero-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .stat-val{font-size:26px}
+
+  /* ---- Match Rows — rediseño en 2 filas ---- */
+  .match-row{
+    display:flex;flex-direction:column;
+    gap:10px;
+    padding:12px 14px;
+  }
+  .match-row-top{
+    display:flex;align-items:center;gap:8px;
+  }
+  /* Recrear el contenido interno vía flex en lugar de grid */
+  .match-row .match-meta{
+    font-size:11px;
+    min-width:52px;
+    flex-shrink:0;
+  }
+  .match-row .team-block{flex:1}
+  .match-row .score-center{min-width:50px}
+  .match-row .team-block.right{flex:1}
+  /* La pred-block aparece en línea debajo */
+  .match-row .pred-block{
+    display:flex !important;
+    align-items:center;
+    justify-content:center;
+    border-top:1px solid var(--border2);
+    padding-top:8px;
+  }
+  .team-name-match{font-size:13px;font-weight:600}
+  .score-display{font-size:20px}
+  /* Inputs de predicción grandes para dedos */
+  .pred-inp{width:44px;height:44px;font-size:18px;border-radius:10px;touch-action:manipulation}
+  .pred-save{width:44px;height:44px;font-size:18px;border-radius:10px}
+  .pred-sep{font-size:18px;font-weight:700}
+
+  /* ---- Elim Rows ---- */
+  .elim-row{
+    display:flex;flex-direction:column;
+    gap:8px;
+    padding:12px 14px;
+  }
+  .elim-row-teams{display:flex;align-items:center;gap:8px}
+  .elim-row .match-code{font-size:12px;min-width:44px;flex-shrink:0}
+  .elim-row .elim-team{font-size:13px;flex:1}
+  .elim-row .elim-vs{min-width:28px;text-align:center}
+  .elim-row .elim-winner-block{
+    display:flex !important;
+    align-items:center;
+    gap:8px;
+    border-top:1px solid var(--border2);
+    padding-top:8px;
+  }
+  .winner-select{font-size:13px;padding:7px 10px}
+
+  /* ---- Tabla Ranking: usar cards en móvil ---- */
+  .ranking-desktop{display:none !important}
+  .ranking-mobile-list{display:block !important}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* Override el padding inline de los divs internos de páginas */
+  .page > div[style*="padding"],.page > div > div[style*="padding"]{padding:0 !important}
+  .page .table-wrap, .page .stat-card,.page .settings-section,.page .rule-card,
+  .page .group-card,.page .participant-card,.page .special-card,.page .deadline-banner,
+  .page .bracket-phase,.page .matches-section,.page .section-title,.page #next-matches-list,
+  .page #activity-feed,.page .hero-grid{margin-left:0;margin-right:0}
+  table{min-width:500px;font-size:12px}
+  th{padding:7px 8px;font-size:10px}
+  td{padding:8px 8px;font-size:12px}
+  td.pts-col{font-size:13px}
+
+  /* ---- Participants ---- */
+  .participants-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .participant-card{padding:14px}
+  .p-pts{font-size:18px}
+
+  /* ---- Special Grid ---- */
+  .special-grid{grid-template-columns:1fr}
+  .special-card{padding:14px}
+
+  /* ---- Groups Grid ---- */
+  .groups-grid{grid-template-columns:1fr}
+
+  /* ---- Rules ---- */
+  .rules-layout{grid-template-columns:1fr}
+  .rule-card{padding:14px}
+
+  /* ---- Settings ---- */
+  .settings-section{padding:14px}
+  .settings-section .field-row{grid-template-columns:1fr}
+  .liga-code-display{font-size:22px;letter-spacing:3px}
+  #qrcode-container{padding:10px}
+
+  /* ---- Modal ---- */
+  .modal{width:95%;padding:20px;max-height:92vh}
+
+  /* ---- Toast ---- */
+  .toast{bottom:80px;left:50%;right:auto;transform:translateX(-50%) translateY(8px);max-width:90vw;text-align:center;white-space:nowrap}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  /* ---- Deadline banner ---- */
+  .deadline-banner{font-size:12px;padding:10px 12px}
+
+  /* ---- Superadmin Panel ---- */
+  .sa-topbar{flex-wrap:wrap;gap:8px;padding:10px 14px}
+  .sa-topbar > div:nth-child(3){display:none}
+  .sa-title{font-size:17px}
+  .sa-row{grid-template-columns:1fr;gap:8px}
+  .sa-inputs{justify-content:flex-start}
+  .sa-inp{width:48px;height:40px;font-size:17px}
+}
+
+/* =============================================
+   MÓVIL ESTRECHO (≤400px)
+   ============================================= */
+@media(max-width:400px){
+  .hero-grid{grid-template-columns:1fr}
+  .participants-grid{grid-template-columns:1fr}
+  .stat-val{font-size:22px}
+  .setup-card{padding:18px 14px}
+  .setup-logo img{width:90px;height:90px}
+  .setup-opt-grid{grid-template-columns:1fr 1fr}
+  .topbar-title{font-size:13px}
+}
+
