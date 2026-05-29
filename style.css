@@ -1147,9 +1147,38 @@ select.form-input { cursor: pointer; }
     content: '';
     display: inline-block;
     width: 36px; height: 36px;
-    background: url('logo-limpio2.png?v=6') center/contain no-repeat;
+    background: url('logo-limpio2.png?v=12') center/contain no-repeat;
     margin-right: 8px;
     vertical-align: middle;
     flex-shrink: 0;
+  }
+  
+  /* Optimización para el Dashboard móvil */
+  .dash-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  
+  /* Optimización de Normas en móvil (mostrar botones de edición sin hover) */
+  .rule-actions {
+    opacity: 1 !important;
+  }
+  
+  /* Optimización de Grupos en móvil (prevenir corte horizontal) */
+  .group-table {
+    min-width: unset !important;
+    width: 100% !important;
+  }
+  .group-table th, .group-table td {
+    padding: 6px 8px !important;
+  }
+  .group-table td {
+    font-size: 11px !important;
+  }
+  .flag-name {
+    font-size: 11px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }

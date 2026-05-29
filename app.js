@@ -573,6 +573,34 @@ function renderDashboard(){
   document.getElementById('dash-participantes').textContent = cache.participantes.length;
   applySidebarProfile();
   renderNextMatches();
+
+  const leaderboardEl = document.getElementById('dash-leaderboard');
+  if (leaderboardEl) {
+    if (!cache.participantes.length) {
+      leaderboardEl.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:16px">Crea o únete a un participante para comenzar.</div>';
+    } else {
+      const scores = cache.participantes.map(p => ({ ...p, ...calcScore(p.id) })).sort((a, b) => b.total - a.total);
+      // Take top 5
+      const topScores = scores.slice(0, 5);
+      const medals = ['🥇', '🥈', '🥉'];
+      leaderboardEl.innerHTML = topScores.map((p, i) => {
+        const pos = i + 1;
+        const posLabel = medals[i] || `<span style="font-size:12px;font-weight:bold;color:var(--text3);width:20px;display:inline-block;text-align:center">${pos}</span>`;
+        const youMark = p.id === getMyId() ? '<span class="you-badge" style="margin-left:4px">yo</span>' : '';
+        const adminMark = p.isAdmin ? '👑' : '';
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--s3);border:1px solid var(--border2);border-radius:8px;font-size:13px;">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+              <span style="font-size:16px;flex-shrink:0;">${posLabel}</span>
+              ${renderAvatarHtml(p, 'sm')}
+              <span style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${p.name}${youMark}${adminMark}</span>
+            </div>
+            <div style="font-weight:800;color:var(--accent3);font-family:'Outfit',sans-serif;flex-shrink:0;">${p.total} pts</div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
 }
 
 function renderNextMatches(){
@@ -2006,7 +2034,7 @@ function downloadImage(blob, filename) {
 // Register Service Worker (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=11')
+    navigator.serviceWorker.register('sw.js?v=12')
       .catch(e => console.warn('SW error:', e));
   });
 }
