@@ -174,6 +174,9 @@ async function saveNormasToSupabase(){
 // ===================== REALTIME =====================
 let realtimeChannel = null;
 let realtimeDebounce = null;
+let lastChangerId = null;
+let lastChangerTable = null;
+let lastChangerDirectName = null;
 
 function setupRealtime(){
   if(realtimeChannel) sb.removeChannel(realtimeChannel);
@@ -186,13 +189,50 @@ function setupRealtime(){
     .subscribe();
 }
 
-async function handleRealtime(){
+async function handleRealtime(payload){
+  if (payload) {
+    lastChangerTable = payload.table;
+    if (payload.table === 'participantes') {
+      if (payload.new && payload.new.nombre) {
+        lastChangerDirectName = payload.new.nombre;
+      } else if (payload.old && payload.old.id) {
+        lastChangerId = payload.old.id;
+      }
+    } else {
+      if (payload.new && payload.new.participante_id) {
+        lastChangerId = payload.new.participante_id;
+      } else if (payload.old && payload.old.participante_id) {
+        lastChangerId = payload.old.participante_id;
+      }
+    }
+  }
+
   clearTimeout(realtimeDebounce);
   realtimeDebounce = setTimeout(async()=>{
     await loadAllData();
     renderPage(currentPage);
     applySidebarProfile();
-    if(typeof logActivity === 'function') logActivity("🔄 Alguien ha guardado un cambio. ¡Datos actualizados!");
+    
+    let changerName = 'Alguien';
+    if (lastChangerDirectName) {
+      changerName = lastChangerDirectName;
+    } else if (lastChangerId) {
+      const p = cache.participantes.find(x => x.id === lastChangerId);
+      if (p) {
+        changerName = p.name;
+      }
+    } else if (lastChangerTable === 'resultados_globales') {
+      changerName = 'El administrador';
+    }
+
+    if(typeof logActivity === 'function') {
+      logActivity(`🔄 ${changerName} ha guardado un cambio. ¡Datos actualizados!`);
+    }
+
+    // Reset
+    lastChangerId = null;
+    lastChangerTable = null;
+    lastChangerDirectName = null;
   }, 600);
 }
 
@@ -1966,7 +2006,7 @@ function downloadImage(blob, filename) {
 // Register Service Worker (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=10')
+    navigator.serviceWorker.register('sw.js?v=11')
       .catch(e => console.warn('SW error:', e));
   });
 }

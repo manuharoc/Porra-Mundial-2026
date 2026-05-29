@@ -1,4 +1,4 @@
-const CACHE = 'porra2026-v10';
+const CACHE = 'porra2026-v11';
 const OFFLINE_ASSETS = [
   './',
   'index.html',
