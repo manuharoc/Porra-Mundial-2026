@@ -689,34 +689,163 @@ function openParticipantModal(uid){
 
 function setPredUser(uid){ currentViewUser=uid; }
 
+// ===================== PRED GRUPOS HELPERS =====================
+function getPredictedStandings(uid) {
+  const standings = {};
+  const preds = (cache.predicciones[uid] || {}).grupos || {};
+
+  GRUPOS.forEach(g => {
+    standings[g.id] = g.equipos.map(eq => ({ name: eq, pj: 0, pts: 0, gf: 0, gc: 0, gd: 0 }));
+    g.partidos.forEach(m => {
+      const key = `G${g.id}_${m.n}`;
+      const pred = preds[key];
+      if (pred && pred.gl !== '' && pred.gl !== undefined && pred.gv !== '' && pred.gv !== undefined) {
+        const gl = parseInt(pred.gl);
+        const gv = parseInt(pred.gv);
+        const local = standings[g.id].find(e => e.name === m.local);
+        const visitor = standings[g.id].find(e => e.name === m.visitante);
+        if (local && visitor) {
+          local.pj++; visitor.pj++;
+          local.gf += gl; visitor.gf += gv;
+          local.gc += gv; visitor.gc += gl;
+          local.gd = local.gf - local.gc;
+          visitor.gd = visitor.gf - visitor.gc;
+          if (gl > gv) { local.pts += 3; } else if (gl < gv) { visitor.pts += 3; } else { local.pts += 1; visitor.pts += 1; }
+        }
+      }
+    });
+    // Sort: Pts > GD > GF
+    standings[g.id].sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      if (b.gd !== a.gd) return b.gd - a.gd;
+      return b.gf - a.gf;
+    });
+  });
+  return standings;
+}
+
+function checkPredChanged(key) {
+  const uid = currentViewUser;
+  if (!uid) return;
+  const lEl = document.getElementById(`pi_${key}_l`);
+  const vEl = document.getElementById(`pi_${key}_v`);
+  const btn = document.getElementById(`psb_${key}`);
+  if (!lEl || !vEl || !btn) return;
+
+  const saved = ((cache.predicciones[uid] || {}).grupos || {})[key];
+  const savedL = saved && saved.gl !== undefined && saved.gl !== '' ? String(saved.gl) : '';
+  const savedV = saved && saved.gv !== undefined && saved.gv !== '' ? String(saved.gv) : '';
+  
+  if (lEl.value === savedL && vEl.value === savedV) {
+    btn.classList.add('saved');
+  } else {
+    btn.classList.remove('saved');
+  }
+}
+
 // ===================== PRED GRUPOS =====================
 function renderGruposPred(){
   const c = document.getElementById('grupos-pred-content');
   if(!c) return;
   document.getElementById('pred-user-selector').innerHTML = renderUserSelector('switchPredUser');
   if(!cache.participantes.length){ c.innerHTML='<div class="empty-state"><div class="ei">👥</div><p>Añade participantes primero.</p></div>'; return; }
-  let html='';
+  
+  const uid = currentViewUser;
+  const totalGroupMatches = 72;
+  let filledCount = 0;
+  if (uid) {
+    GRUPOS.forEach(g => {
+      g.partidos.forEach(m => {
+        const key = `G${g.id}_${m.n}`;
+        const pred = ((cache.predicciones[uid] || {}).grupos || {})[key];
+        if (pred && pred.gl !== '' && pred.gl !== undefined && pred.gv !== '' && pred.gv !== undefined) {
+          filledCount++;
+        }
+      });
+    });
+  }
+
+  let progressHtml = '';
+  if (uid) {
+    const pct = Math.round((filledCount / totalGroupMatches) * 100);
+    progressHtml = `
+      <div class="progress-container" style="background: var(--s2); border: 1px solid var(--border2); border-radius: var(--r); padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+        <div style="font-size: 13px; font-weight: 600; color: var(--text);">
+          📋 Progreso de tus predicciones: <span style="color: var(--accent3)">${filledCount} / ${totalGroupMatches} partidos</span>
+        </div>
+        <div style="flex: 1; min-width: 150px; background: var(--s4); height: 8px; border-radius: 4px; overflow: hidden; position: relative;">
+          <div style="background: linear-gradient(90deg, var(--accent) 0%, var(--accent3) 100%); height: 100%; width: ${pct}%; transition: width 0.3s ease;"></div>
+        </div>
+        <div style="font-size: 12px; font-weight: 700; color: var(--accent3);">${pct}%</div>
+      </div>
+    `;
+  }
+
+  let html = progressHtml;
   GRUPOS.forEach(g=>{
     html+=`<div class="matches-section"><div class="section-title">Grupo ${g.id} <span style="font-size:13px;color:var(--text2);font-family:Barlow,sans-serif">· ${g.equipos.join(' · ')}</span></div>`;
     g.partidos.forEach(m=>{
       const key=`G${g.id}_${m.n}`, res=(cache.resultados.grupos||{})[key];
       const hasRes=res&&res.gl!==''&&res.gl!==undefined;
-      const uid=currentViewUser, preds=uid?(((cache.predicciones[uid]||{}).grupos||{})[key]):null;
+      const preds=uid?(((cache.predicciones[uid]||{}).grupos||{})[key]):null;
       let predHtml='';
-      if(preds&&preds.gl!==''&&preds.gl!==undefined){
-        let cls='pred-partial',label='Ganador ✓',pts='+1 pt';
-        if(hasRes){
+      if(hasRes){
+        if(preds&&preds.gl!==''&&preds.gl!==undefined){
+          let cls='pred-partial',label='Ganador ✓',pts='+1 pt';
           if(parseInt(preds.gl)===parseInt(res.gl)&&parseInt(preds.gv)===parseInt(res.gv)){cls='pred-exact';label='¡Exacto! 🎯';pts='+3 pts';}
           else{const pw=parseInt(preds.gl)>parseInt(preds.gv)?'L':parseInt(preds.gl)<parseInt(preds.gv)?'V':'D';const rw=parseInt(res.gl)>parseInt(res.gv)?'L':parseInt(res.gl)<parseInt(res.gv)?'V':'D';if(pw!==rw){cls='pred-wrong';label='Fallo ✗';pts='0 pts';}}
+          predHtml=`<span class="${cls}">${preds.gl}–${preds.gv} ${label}<span class="pts-earned">${pts}</span></span>`;
+        } else {
+          predHtml=`<span class="pred-wrong" style="background:rgba(239,68,68,0.1);color:var(--red)">Sin predicción <span class="pts-earned">0 pts</span></span>`;
         }
-        predHtml=`<span class="${cls}">${preds.gl}–${preds.gv} ${label}<span class="pts-earned">${pts}</span></span>`;
-      } else { predHtml=renderPredInputsHtml(key); }
+      } else { 
+        predHtml=renderPredInputsHtml(key); 
+      }
       const isFilled = preds&&preds.gl!==''&&preds.gl!==undefined;
       html+=`<div class="match-row ${isFilled ? 'has-pred' : ''}"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div></div><div class="team-block"><div class="team-name-match">${m.local}</div></div><div class="score-center">${hasRes?`<div class="score-display">${res.gl}–${res.gv}</div>`:'<div class="score-vs">VS</div>'}<div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${m.visitante}</div></div><div class="pred-block"><div class="pred-label">Tu predicción</div>${predHtml}</div></div>`;
     });
     html+='</div>';
   });
-  c.innerHTML=html;
+
+  if (uid && filledCount === totalGroupMatches) {
+    const standings = getPredictedStandings(uid);
+    html += `
+      <div class="matches-section" style="margin-top: 30px; background: var(--s2); border: 1px solid var(--border); padding: 24px; border-radius: var(--r-lg);">
+        <div class="section-title" style="color: var(--accent3); font-size: 18px; margin-bottom: 8px; font-family: 'Outfit', sans-serif; font-weight: 800;">
+          📊 Clasificación Final Predicha
+        </div>
+        <p style="font-size: 12px; color: var(--text2); margin-bottom: 20px;">
+          ¡Completaste todas las predicciones! Así quedarían las posiciones de los grupos según tus resultados:
+        </p>
+        <div class="groups-grid">
+          ${GRUPOS.map(g => `
+            <div class="group-card" style="background: var(--s3)">
+              <div class="group-card-header" style="background: var(--s4)">
+                <div class="group-letter" style="background: var(--accent); color: white">${g.id}</div>
+                <div class="group-name">Grupo ${g.id}</div>
+              </div>
+              <table class="group-table">
+                <thead><tr><th>Equipo</th><th style="text-align:center">PJ</th><th style="text-align:center">GD</th><th style="text-align:center">Pts</th></tr></thead>
+                <tbody>
+                  ${standings[g.id].map((eq, i) => `
+                    <tr style="position:relative">
+                      ${i < 2 ? '<td style="padding-left:14px;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--green)"></span>' : '<td>'}
+                      <div class="flag-name"><span class="team-flag-sm">⚽</span>${eq.name}</div></td>
+                      <td style="color:var(--text3);font-size:12px;text-align:center">${eq.pj}</td>
+                      <td style="color:var(--text3);font-size:12px;text-align:center">${eq.gd > 0 ? '+' + eq.gd : eq.gd}</td>
+                      <td style="color:var(--accent3);font-weight:700;font-size:13px;text-align:center">${eq.pts}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  c.innerHTML = html;
 }
 
 function renderPredInputsHtml(key){
@@ -724,7 +853,14 @@ function renderPredInputsHtml(key){
   if(!uid) return '<span style="font-size:11px;color:var(--text3)">Selecciona usuario</span>';
   const saved=((cache.predicciones[uid]||{}).grupos||{})[key];
   const isSaved=saved&&saved.gl!==''&&saved.gl!==undefined;
-  return `<div class="pred-inputs"><input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_l" value="${isSaved?saved.gl:''}" placeholder="–" ${isSaved?'disabled':''}><span class="pred-sep">–</span><input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_v" value="${isSaved?saved.gv:''}" placeholder="–" ${isSaved?'disabled':''}><button class="pred-save ${isSaved?'saved':''}" id="psb_${key}" onclick="savePredGrupo('${key}')" ${isSaved?'disabled':''}>✓</button></div>`;
+  const glVal = isSaved ? saved.gl : '';
+  const gvVal = isSaved ? saved.gv : '';
+  return `<div class="pred-inputs">
+    <input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_l" value="${glVal}" placeholder="–" oninput="checkPredChanged('${key}')">
+    <span class="pred-sep">–</span>
+    <input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_v" value="${gvVal}" placeholder="–" oninput="checkPredChanged('${key}')">
+    <button class="pred-save ${isSaved?'saved':''}" id="psb_${key}" onclick="savePredGrupo('${key}')">✓</button>
+  </div>`;
 }
 
 function fireConfetti() {
@@ -744,14 +880,22 @@ async function savePredGrupo(key){
   const l=document.getElementById('pi_'+key+'_l'), v=document.getElementById('pi_'+key+'_v');
   if(!l||!v||l.value===''||v.value===''){ showToast('Introduce el marcador'); return; }
   const gl=parseInt(l.value), gv=parseInt(v.value);
-  // Optimistic UI update
+  
   if(!cache.predicciones[uid]) cache.predicciones[uid]={grupos:{},elim:{},especiales:{},especialesTs:{}};
   cache.predicciones[uid].grupos[key]={gl,gv};
-  l.disabled=true; v.disabled=true;
+  
   const btn=document.getElementById('psb_'+key);
-  if(btn){ btn.classList.add('saved'); btn.disabled=true; }
+  if(btn){ btn.classList.add('saved'); }
+  
   const { error } = await sb.from('predicciones_grupos').upsert({ participante_id:uid, match_key:key, goles_local:gl, goles_visitante:gv },{ onConflict:'participante_id,match_key' });
-  if(error){ showToast('❌ Error al guardar'); } else { showToast('✅ Predicción guardada'); fireConfetti(); }
+  if(error){ 
+    showToast('❌ Error al guardar'); 
+    if(btn) btn.classList.remove('saved');
+  } else { 
+    showToast('✅ Predicción guardada'); 
+    fireConfetti(); 
+    renderGruposPred();
+  }
 }
 
 function toggleFilledMatches() {
@@ -1822,7 +1966,7 @@ function downloadImage(blob, filename) {
 // Register Service Worker (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=9')
+    navigator.serviceWorker.register('sw.js?v=10')
       .catch(e => console.warn('SW error:', e));
   });
 }
