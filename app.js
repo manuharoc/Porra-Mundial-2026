@@ -386,7 +386,9 @@ function copyLigaCode(e){
 // Bottom nav pages que tienen botón directo
 const BOTTOM_NAV_PAGES = ['dashboard','ranking','grupos-pred','eliminatorias-pred'];
 
+
 function goto(page){
+  closeMobileMenu();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const el = document.getElementById('page-'+page);
@@ -1500,7 +1502,33 @@ function downloadImage(blob, filename) {
 // Register Service Worker (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('sw.js?v=6')
       .catch(e => console.warn('SW error:', e));
   });
+}
+
+// Force App cache clear and update
+async function forceAppUpdate() {
+  showToast('🔄 Limpiando caché...');
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (let reg of registrations) {
+        await reg.unregister();
+      }
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      for (let key of keys) {
+        await caches.delete(key);
+      }
+    }
+    showToast('✅ Caché limpia. Recargando...', 2000);
+    setTimeout(() => {
+      window.location.reload(true);
+    }, 1000);
+  } catch (err) {
+    console.error('Error clearing cache:', err);
+    window.location.reload(true);
+  }
 }

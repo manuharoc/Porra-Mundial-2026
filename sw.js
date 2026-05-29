@@ -1,12 +1,12 @@
-const CACHE = 'porra2026-v3';
+const CACHE = 'porra2026-v6';
 const OFFLINE_ASSETS = [
-  '/',
-  '/index.html',
-  '/logo-limpio2.png',
-  '/manifest.json',
-  '/style.css',
-  '/app.js',
-  '/data.js'
+  './',
+  'index.html',
+  'logo-limpio2.png',
+  'manifest.json',
+  'style.css',
+  'app.js',
+  'data.js'
 ];
 
 // Install: pre-cache the shell
@@ -41,6 +41,6 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() => caches.match(e.request, { ignoreSearch: true }))
   );
 });
