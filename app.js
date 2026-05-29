@@ -969,7 +969,7 @@ function resolveTeamForSlot(slot, uid) {
       let visitante = 'W100';
       if (predVal.startsWith('{')) {
         try {
-          const parsed = JSON.parse(parsed);
+          const parsed = JSON.parse(predVal);
           winner = parsed.ganador;
           local = parsed.local;
           visitante = parsed.visitante;
@@ -1822,7 +1822,7 @@ function downloadImage(blob, filename) {
 // Register Service Worker (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=8')
+    navigator.serviceWorker.register('sw.js?v=9')
       .catch(e => console.warn('SW error:', e));
   });
 }
