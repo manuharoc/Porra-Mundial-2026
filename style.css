@@ -921,3 +921,21 @@ select.form-input { cursor: pointer; }
   .match-row { grid-template-columns: 76px 1fr auto 1fr 120px; gap: 10px; }
   .groups-grid { grid-template-columns: 1fr; }
 }
+
+/* ── FIX MOBILE NAV ── */
+@media (max-width: 768px) {
+  .bottom-nav {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr);
+  }
+  /* Logo en topbar móvil */
+  .topbar-left::before {
+    content: '';
+    display: inline-block;
+    width: 28px; height: 28px;
+    background: url('/logo-limpio2.png') center/contain no-repeat;
+    margin-right: 8px;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+}
