@@ -50,6 +50,11 @@
     <div class="setup-steps">
       <!-- Step 0: Elegir acción -->
       <div class="setup-step active" id="step-0">
+        <div id="saved-leagues-container" style="display:none; margin-bottom: 24px;">
+          <div class="step-label">Tus ligas guardadas</div>
+          <div class="saved-leagues-list" id="saved-leagues-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;"></div>
+        </div>
+
         <div class="step-label">¿Qué quieres hacer?</div>
         <div class="setup-opt-grid">
           <button class="setup-opt-btn" onclick="chooseCreate()">
@@ -154,6 +159,7 @@
           <div class="sp-role" id="sidebar-role"><span class="realtime-dot"></span>En vivo</div>
         </div>
       </div>
+      <button class="btn btn-sm btn-full" style="margin-top:10px;background:rgba(255,255,255,0.05);color:var(--text2);border:1px solid var(--border2)" onclick="switchLeague()">🔄 Cambiar de Liga</button>
     </div>
   </aside>
 
@@ -571,6 +577,9 @@
   </button>
   <button class="mobile-menu-item" onclick="closeMobileMenu();goto('config')">
     <span>⚙️</span> Configuración
+  </button>
+  <button class="mobile-menu-item" onclick="closeMobileMenu();switchLeague()">
+    <span>🔄</span> Cambiar de Liga
   </button>
 </div>
 

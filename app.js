@@ -5,6 +5,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===================== SESSION & CACHE =====================
 const SESSION_KEY = 'porra2026_session_v3';
+const MULTI_SESSION_KEY = 'porra2026_multi_v1';
 let session = null; // { liga_id, participante_id }
 
 // Cache: field names use camelCase matching original JS code
@@ -337,9 +338,60 @@ async function setupFinish(){
     session = { liga_id, participante_id:partId };
   }
 
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   currentViewUser = session.participante_id;
   await loadAllData();
+  saveCurrentToMultiSession();
+  setupRealtime();
+  showApp();
+}
+
+function saveCurrentToMultiSession(){
+  if(!session || !cache.liga) return;
+  const me = cache.participantes.find(p=>p.id===session.participante_id);
+  const arr = JSON.parse(localStorage.getItem(MULTI_SESSION_KEY)||'[]');
+  const idx = arr.findIndex(x=>x.liga_id===session.liga_id && x.participante_id===session.participante_id);
+  const entry = { liga_id:session.liga_id, participante_id:session.participante_id, liga_name:cache.liga.nombre, my_name:me?me.name:'', avatar:me?me.photo:null };
+  if(idx>=0) arr[idx] = entry; else arr.push(entry);
+  localStorage.setItem(MULTI_SESSION_KEY, JSON.stringify(arr));
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+function switchLeague(){
+  session = null;
+  currentViewUser = null;
+  localStorage.removeItem(SESSION_KEY);
+  if(realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel=null; }
+  document.getElementById('setup-screen').classList.remove('hidden');
+  document.querySelectorAll('.setup-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step-0').classList.add('active');
+  renderSavedLeagues();
+}
+
+function renderSavedLeagues(){
+  const arr = JSON.parse(localStorage.getItem(MULTI_SESSION_KEY)||'[]');
+  const cont = document.getElementById('saved-leagues-container');
+  const list = document.getElementById('saved-leagues-list');
+  if(!arr.length){ cont.style.display='none'; return; }
+  cont.style.display='block';
+  list.innerHTML = arr.map(x=>`
+    <button class="setup-opt-btn" onclick="enterSavedLeague('${x.liga_id}', '${x.participante_id}')" style="text-align:left;flex-direction:row;align-items:center;padding:12px 16px;gap:12px">
+      ${x.avatar && x.avatar.startsWith('data:') ? `<img src="${x.avatar}" style="width:40px;height:40px;border-radius:50%;object-fit:cover">` : `<div style="width:40px;height:40px;border-radius:50%;background:rgba(123,44,191,0.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px">${(x.my_name||'?').slice(0,2).toUpperCase()}</div>`}
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;color:var(--text);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.liga_name}</div>
+        <div style="color:var(--text3);font-size:13px">${x.my_name}</div>
+      </div>
+      <div style="color:var(--text3)">➔</div>
+    </button>
+  `).join('');
+}
+
+async function enterSavedLeague(liga_id, participante_id){
+  session = { liga_id, participante_id };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  currentViewUser = session.participante_id;
+  setLoadingText('Entrando...'); showLoading(true);
+  await loadAllData();
+  saveCurrentToMultiSession();
   setupRealtime();
   showApp();
 }
@@ -356,6 +408,7 @@ function setLoadingText(t){ document.getElementById('loading-text').textContent=
 function showSetup(){
   document.getElementById('setup-screen').classList.remove('hidden');
   showLoading(false);
+  if(typeof renderSavedLeagues === 'function') renderSavedLeagues();
 }
 
 function openCustomSpecialModal(){ document.getElementById('modal-custom-special').classList.add('open'); }
@@ -1960,6 +2013,20 @@ async function saveGlobalPichichi(){
 async function initApp(){
   showLoading(true);
   setLoadingText('Conectando con Supabase…');
+
+  const oldSession = localStorage.getItem(SESSION_KEY);
+  const multiStr = localStorage.getItem(MULTI_SESSION_KEY);
+  if(oldSession && !multiStr){
+    try {
+      const s = JSON.parse(oldSession);
+      const { data: part } = await sb.from('participantes').select('id,liga_id,nombre,emoji').eq('id', s.participante_id).maybeSingle();
+      const { data: liga } = await sb.from('ligas').select('nombre').eq('id', s.liga_id).maybeSingle();
+      if(part && liga){
+        const arr = [{ liga_id: s.liga_id, participante_id: s.participante_id, liga_name: liga.nombre, my_name: part.nombre, avatar: part.emoji }];
+        localStorage.setItem(MULTI_SESSION_KEY, JSON.stringify(arr));
+      }
+    } catch(e){}
+  }
 
   // Check superadmin mode
   if(checkSuperadminUrl()){
