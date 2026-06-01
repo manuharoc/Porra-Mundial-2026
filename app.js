@@ -396,13 +396,6 @@ function showApp(){
   renderParticipants();
   renderRanking();
   currentPage = 'dashboard';
-
-  if(!window._hamburgerInjected) {
-    document.querySelectorAll('.topbar-left, .topbar-title').forEach(el => {
-      el.insertAdjacentHTML('afterbegin', '<button class="mobile-hamburger" onclick="openMobileMenu()">☰</button>');
-    });
-    window._hamburgerInjected = true;
-  }
 }
 
 function applySidebarProfile(){
@@ -766,7 +759,10 @@ function openParticipantModal(uid){
       <div class="stat-card" style="padding:13px"><div class="stat-label">Campeón</div><div class="stat-val">${s.campeon}</div></div>
       <div class="stat-card" style="padding:13px"><div class="stat-label">TOTAL</div><div class="stat-val gold">${s.total}</div></div>
     </div>
-    <button class="btn btn-accent btn-full" onclick="setPredUser('${uid}');closeModal('modal-participant');goto('grupos-pred')">Introducir predicciones de ${p.name}</button>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button class="btn btn-accent btn-full" onclick="setPredUser('${uid}');closeModal('modal-participant');goto('grupos-pred')">${uid === getMyId() ? 'Modificar mis predicciones' : 'Ver predicciones de ' + p.name}</button>
+      ${uid !== getMyId() ? `<button class="btn btn-full" onclick="closeModal('modal-participant');openVsModal('${uid}')">⚔️ Cara a Cara vs ${p.name}</button>` : ''}
+    </div>
   `;
   document.getElementById('modal-participant').classList.add('open');
 }

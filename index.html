@@ -526,6 +526,30 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ====== BOTTOM NAV (móvil) ====== -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bn-item active" id="bn-dashboard" onclick="goto('dashboard')">
+    <span class="bn-icon">🏠</span>
+    <span class="bn-label">Inicio</span>
+  </button>
+  <button class="bn-item" id="bn-ranking" onclick="goto('ranking')">
+    <span class="bn-icon">🏆</span>
+    <span class="bn-label">Ranking</span>
+  </button>
+  <button class="bn-item" id="bn-grupos-pred" onclick="goto('grupos-pred')">
+    <span class="bn-icon">📋</span>
+    <span class="bn-label">Partidos</span>
+  </button>
+  <button class="bn-item" id="bn-eliminatorias-pred" onclick="goto('eliminatorias-pred')">
+    <span class="bn-icon">⚡</span>
+    <span class="bn-label">Elim.</span>
+  </button>
+  <button class="bn-item" id="bn-more" onclick="toggleMobileMenu()">
+    <span class="bn-icon">☰</span>
+    <span class="bn-label">Más</span>
+  </button>
+</nav>
+
 <!-- ====== MOBILE MENU DRAWER ====== -->
 <div class="mobile-menu-overlay" id="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
 <div class="mobile-menu-drawer" id="mobile-menu-drawer">
@@ -533,18 +557,6 @@
     <div style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:var(--text)" id="mobile-liga-name">Mundial 2026</div>
     <div style="font-size:11px;color:var(--text3);margin-top:2px" id="mobile-liga-code-wrap">🔑 <span id="mobile-liga-code">—</span></div>
   </div>
-  <button class="mobile-menu-item" onclick="closeMobileMenu();goto('dashboard')">
-    <span>🏠</span> Inicio
-  </button>
-  <button class="mobile-menu-item" onclick="closeMobileMenu();goto('ranking')">
-    <span>🏆</span> Clasificación
-  </button>
-  <button class="mobile-menu-item" onclick="closeMobileMenu();goto('grupos-pred')">
-    <span>📋</span> Predicciones Grupos
-  </button>
-  <button class="mobile-menu-item" onclick="closeMobileMenu();goto('eliminatorias-pred')">
-    <span>⚡</span> Predicciones Elim.
-  </button>
   <button class="mobile-menu-item" onclick="closeMobileMenu();goto('participantes')">
     <span>👥</span> Participantes
   </button>
