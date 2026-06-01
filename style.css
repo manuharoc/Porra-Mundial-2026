@@ -762,17 +762,7 @@ select.form-input { cursor: pointer; }
    BOTTOM NAV (siempre en DOM, visible solo en móvil)
 ═══════════════════════════════════════════════════════ */
 .bottom-nav {
-  display: none; /* oculto en desktop */
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: var(--bottom-nav-h);
-  background: var(--s1);
-  border-top: 1px solid var(--border2);
-  z-index: 170;
-  padding: 0 4px env(safe-area-inset-bottom, 0);
-  /* 5 ítems iguales */
-  grid-template-columns: repeat(5, 1fr);
-  align-items: stretch;
+  display: none !important; /* oculto siempre — navegación solo por sidebar */
 }
 
 .bn-item {
@@ -812,7 +802,7 @@ select.form-input { cursor: pointer; }
 
 .mobile-menu-drawer {
   position: fixed;
-  bottom: var(--bottom-nav-h); left: 0; right: 0;
+  bottom: 0; left: 0; right: 0;
   background: var(--s1);
   border-top: 1px solid var(--border);
   border-radius: 20px 20px 0 0;
@@ -839,6 +829,15 @@ select.form-input { cursor: pointer; }
 .mobile-menu-item:last-child { border-bottom: none; }
 .mobile-menu-item span { font-size: 20px; }
 
+/* Hamburger button — solo visible en móvil */
+.mobile-hamburger {
+  display: none;
+  background: none; border: none;
+  color: var(--text); font-size: 22px;
+  cursor: pointer; padding: 6px;
+  line-height: 1; flex-shrink: 0;
+}
+
 /* ═══════════════════════════════════════════════════════
    RESPONSIVE — MOBILE ( ≤ 768px )
 ═══════════════════════════════════════════════════════ */
@@ -849,12 +848,7 @@ select.form-input { cursor: pointer; }
   .sidebar { display: none; }
   .main { min-height: 100vh; }
 
-  /* Bottom nav visible */
-  .bottom-nav { display: grid; }
-
-  /* Espacio para el bottom nav */
-  .page > div[style*="padding"],
-  .page > div { padding-bottom: calc(var(--bottom-nav-h) + 16px) !important; }
+  /* Bottom nav eliminado — navegación por hamburguesa */\r\n  .mobile-hamburger { display: flex; align-items: center; justify-content: center; }
 
   /* Topbar compacto */
   .topbar {
@@ -1094,8 +1088,8 @@ select.form-input { cursor: pointer; }
   .field-row { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
 
-  /* Toast sobre bottom nav */
-  .toast { bottom: calc(var(--bottom-nav-h) + 10px); right: 12px; }
+  /* Toast */
+  .toast { bottom: 20px; right: 12px; }
 
   /* Modal full bottom sheet en móvil */
   .modal-overlay { align-items: flex-end; padding: 0; }
@@ -1138,10 +1132,6 @@ select.form-input { cursor: pointer; }
 
 /* ── FIX MOBILE NAV ── */
 @media (max-width: 768px) {
-  .bottom-nav {
-    display: grid !important;
-    grid-template-columns: repeat(5, 1fr);
-  }
   /* Logo en topbar móvil */
   .topbar-left::before {
     content: '';

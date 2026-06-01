@@ -396,6 +396,13 @@ function showApp(){
   renderParticipants();
   renderRanking();
   currentPage = 'dashboard';
+
+  if(!window._hamburgerInjected) {
+    document.querySelectorAll('.topbar-left, .topbar-title').forEach(el => {
+      el.insertAdjacentHTML('afterbegin', '<button class="mobile-hamburger" onclick="openMobileMenu()">☰</button>');
+    });
+    window._hamburgerInjected = true;
+  }
 }
 
 function applySidebarProfile(){
@@ -622,7 +629,7 @@ function renderNextMatches(){
         const parts = m.fecha.split(' ');
         const day = parseInt(parts[0]);
         const month = parts[1].toLowerCase().startsWith('jun') ? 5 : 6;
-        const [h, min] = m.hora.split(':').map(Number);
+        const [h, min] = m.hora.split(':').map(x => parseInt(x, 10));
         const ts = new Date(2026, month, day, h, min).getTime();
         upcoming.push({ ...m, grupo: g.id, key, ts });
       }
@@ -932,11 +939,14 @@ function renderPredInputsHtml(key){
   const isSaved=saved&&saved.gl!==''&&saved.gl!==undefined;
   const glVal = isSaved ? saved.gl : '';
   const gvVal = isSaved ? saved.gv : '';
+  const isMe = uid === getMyId();
+  const disStr = isMe ? '' : ' disabled';
+  const btnHtml = isMe ? `<button class="pred-save ${isSaved?'saved':''}" id="psb_${key}" onclick="savePredGrupo('${key}')">✓</button>` : '';
   return `<div class="pred-inputs">
-    <input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_l" value="${glVal}" placeholder="–" oninput="checkPredChanged('${key}')">
+    <input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_l" value="${glVal}" placeholder="–" oninput="checkPredChanged('${key}')"${disStr}>
     <span class="pred-sep">–</span>
-    <input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_v" value="${gvVal}" placeholder="–" oninput="checkPredChanged('${key}')">
-    <button class="pred-save ${isSaved?'saved':''}" id="psb_${key}" onclick="savePredGrupo('${key}')">✓</button>
+    <input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_v" value="${gvVal}" placeholder="–" oninput="checkPredChanged('${key}')"${disStr}>
+    ${btnHtml}
   </div>`;
 }
 
@@ -995,7 +1005,7 @@ async function magicFill() {
         const parts = m.fecha.split(' ');
         const day = parseInt(parts[0]);
         const month = parts[1].toLowerCase().startsWith('jun') ? 5 : 6;
-        const [h, min] = m.hora.split(':').map(Number);
+        const [h, min] = m.hora.split(':').map(x => parseInt(x, 10));
         const ts = new Date(2026, month, day, h, min).getTime();
         emptyMatches.push({ key, ts });
       }
@@ -1339,6 +1349,8 @@ function renderElimPred(){
   if(!cache.participantes.length){ c.innerHTML='<div class="empty-state"><div class="ei">👥</div><p>Añade participantes primero.</p></div>'; return; }
   
   const uid=currentViewUser;
+  const isMe = uid === getMyId();
+  const disStr = isMe ? '' : ' disabled';
   let html='';
   
   ELIM_PHASES.forEach(phase=>{
@@ -1383,7 +1395,7 @@ function renderElimPred(){
       let localHtml = '';
       if (isLocalSelect) {
         localHtml = `
-          <select id="local-${m.code}" class="winner-select" style="font-weight:700" onchange="updateWinnerDropdown('${m.code}'); saveElimPredRow('${m.code}');">
+          <select id="local-${m.code}" class="winner-select" style="font-weight:700" onchange="updateWinnerDropdown('${m.code}'); saveElimPredRow('${m.code}');"${disStr}>
             <option value="">— ${m.local} —</option>
             ${possibleLocals.map(t => `<option value="${t}" ${displayLocal === t ? 'selected' : ''}>${t}</option>`).join('')}
           </select>
@@ -1397,7 +1409,7 @@ function renderElimPred(){
       let visitanteHtml = '';
       if (isVisitanteSelect) {
         visitanteHtml = `
-          <select id="visitante-${m.code}" class="winner-select" style="font-weight:700; text-align:right" onchange="updateWinnerDropdown('${m.code}'); saveElimPredRow('${m.code}');">
+          <select id="visitante-${m.code}" class="winner-select" style="font-weight:700; text-align:right" onchange="updateWinnerDropdown('${m.code}'); saveElimPredRow('${m.code}');"${disStr}>
             <option value="">— ${m.visitante} —</option>
             ${possibleVisitantes.map(t => `<option value="${t}" ${displayVisitante === t ? 'selected' : ''}>${t}</option>`).join('')}
           </select>
@@ -1415,12 +1427,12 @@ function renderElimPred(){
         <div class="elim-row">
           <div class="match-code">${m.code}<br><span style="font-size:10px;color:var(--text3)">${m.fecha}</span></div>
           ${localHtml}
-          <input type="number" min="0" placeholder="-" id="gl-${m.code}" class="elim-score-inp" value="${predGl}" oninput="handleElimGoalsChange('${m.code}')">
+          <input type="number" min="0" placeholder="-" id="gl-${m.code}" class="elim-score-inp" value="${predGl}" oninput="handleElimGoalsChange('${m.code}')"${disStr}>
           <div class="elim-vs">${vsText}</div>
-          <input type="number" min="0" placeholder="-" id="gv-${m.code}" class="elim-score-inp" value="${predGv}" oninput="handleElimGoalsChange('${m.code}')">
+          <input type="number" min="0" placeholder="-" id="gv-${m.code}" class="elim-score-inp" value="${predGv}" oninput="handleElimGoalsChange('${m.code}')"${disStr}>
           ${visitanteHtml}
           <div class="elim-winner-block">
-            <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" onchange="saveElimPredRow('${m.code}')">
+            <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" onchange="saveElimPredRow('${m.code}')"${disStr}>
               <option value="">— Ganador —</option>
               ${displayLocal && ALL_TEAMS.includes(displayLocal) ? `<option value="${displayLocal}" ${predWinner === displayLocal ? 'selected' : ''}>${displayLocal}</option>` : ''}
               ${displayVisitante && ALL_TEAMS.includes(displayVisitante) ? `<option value="${displayVisitante}" ${predWinner === displayVisitante ? 'selected' : ''}>${displayVisitante}</option>` : ''}
@@ -1460,6 +1472,13 @@ function renderEspeciales(){
 
   // Render bonus panel (visible for all)
   renderBonusRondasPanel();
+  const isMe = uid === getMyId();
+  const disStr = isMe ? '' : ' disabled';
+
+  ['select-campeon','select-subcampeon','input-pichichi','select-tercero','select-mas-goles','select-mas-tarjetas'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.disabled = !isMe;
+  });
 
   if(uid){
     const esp=((cache.predicciones[uid]||{}).especiales)||{};
@@ -1497,7 +1516,7 @@ function renderEspeciales(){
         <div class="special-icon">${d.icono}</div>
         <div class="special-label">${d.titulo}</div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Acierto: <strong style="color:var(--accent)">+${d.puntos} pts</strong></div>
-        <input class="form-input" placeholder="Tu respuesta..." style="margin-top:5px" value="${esp[key]||''}" onblur="saveSpecial('${key}',this.value)">
+        <input class="form-input" placeholder="Tu respuesta..." style="margin-top:5px" value="${esp[key]||''}" onblur="saveSpecial('${key}',this.value)"${disStr}>
         <div class="pred-timestamp empty" id="ts-${key}"></div>
         ${adminControls}
       </div>`;
