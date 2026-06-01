@@ -386,10 +386,22 @@ function renderSavedLeagues(){
 }
 
 async function enterSavedLeague(liga_id, participante_id){
+  setLoadingText('Verificando liga...'); showLoading(true);
+  const { data: ligaCheck } = await sb.from('ligas').select('id').eq('id', liga_id).maybeSingle();
+  if(!ligaCheck){
+    const arr = JSON.parse(localStorage.getItem(MULTI_SESSION_KEY)||'[]');
+    const newArr = arr.filter(x => x.liga_id !== liga_id);
+    localStorage.setItem(MULTI_SESSION_KEY, JSON.stringify(newArr));
+    showToast('❌ La liga ya no existe (ha sido borrada)');
+    showLoading(false);
+    renderSavedLeagues();
+    return;
+  }
+
   session = { liga_id, participante_id };
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   currentViewUser = session.participante_id;
-  setLoadingText('Entrando...'); showLoading(true);
+  setLoadingText('Entrando...');
   await loadAllData();
   saveCurrentToMultiSession();
   setupRealtime();
