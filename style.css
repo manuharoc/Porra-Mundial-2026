@@ -683,6 +683,8 @@ td.pts-col { color: var(--accent3); font-weight: 700; font-family: 'Outfit', san
 .form-input:focus { outline: none; border-color: var(--accent2); }
 .form-textarea { resize: vertical; min-height: 80px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pts-admin-grid { display: grid; grid-template-columns: 1fr 1fr 60px auto; gap: 8px; align-items: end; }
+.norma-admin-grid { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
 select.form-input { cursor: pointer; }
 
 /* ── MODAL ── */
@@ -1093,6 +1095,12 @@ select.form-input { cursor: pointer; }
   /* Settings */
   .field-row { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
+  .pts-admin-grid { grid-template-columns: 1fr 1fr; }
+  .pts-admin-grid > div:nth-child(1) { grid-column: span 2; }
+  .pts-admin-grid > div:nth-child(2) { grid-column: span 2; }
+  .pts-admin-grid > div:nth-child(4) { grid-column: span 2; }
+  .norma-admin-grid { grid-template-columns: 1fr; }
+  .norma-admin-grid > div:nth-child(2) { width: 100%; }
 
   /* Toast sobre bottom nav */
   .toast { bottom: calc(var(--bottom-nav-h) + 10px); right: 12px; }

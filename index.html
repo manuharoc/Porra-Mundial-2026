@@ -362,7 +362,7 @@
             </div>
             <div id="new-pts-row" style="display:none">
               <div class="divider"></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 60px auto;gap:8px;align-items:end">
+              <div class="pts-admin-grid">
                 <div><label class="form-label">Fase</label><input class="form-input" id="new-pts-fase" placeholder="Ej: Grupos"></div>
                 <div><label class="form-label">Descripción</label><input class="form-input" id="new-pts-desc" placeholder="Resultado exacto"></div>
                 <div><label class="form-label">Pts</label><input class="form-input" id="new-pts-pts" type="number" min="0" placeholder="3"></div>
@@ -378,7 +378,7 @@
             <div id="normas-list"></div>
             <div id="new-norma-row" style="display:none">
               <div class="divider"></div>
-              <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
+              <div class="norma-admin-grid">
                 <div>
                   <label class="form-label">Título</label>
                   <input class="form-input" id="new-norma-title" placeholder="Ej: Fecha límite" style="margin-bottom:6px">
@@ -581,6 +581,17 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="data.js?v=13"></script>
 <script src="app.js?v=13"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        console.log('ServiceWorker registered');
+      }).catch(err => {
+        console.log('ServiceWorker registration failed', err);
+      });
+    });
+  }
+</script>
 </body>
 </html>
 
