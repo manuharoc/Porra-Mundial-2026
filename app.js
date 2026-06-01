@@ -14,6 +14,7 @@ const cache = {
   predicciones: {},
   resultados: { grupos:{}, elim:{}, especiales:{} },
   normas: { pts:[], normas:[] },
+  normasRaw: [],      // raw Supabase rows — needed for custom specials
   bonusRondas: null   // { grupos:{n,pts}, r32:{n,pts}, octavos:{n,pts}, cuartos:{n,pts}, semis:{n,pts}, final:{n,pts} }
 };
 
@@ -141,10 +142,12 @@ async function loadAllData(){
       pts: normasData.filter(n=>n.tipo==='pts').map(n=>n.datos),
       normas: normasData.filter(n=>n.tipo==='norma').map(n=>n.datos)
     };
+    cache.normasRaw = normasData; // keep raw rows for custom specials
     const bonusRow = normasData.find(n=>n.tipo==='bonus_rondas');
     cache.bonusRondas = bonusRow ? bonusRow.datos : getDefaultBonusRondas();
   } else {
     cache.normas = { pts: JSON.parse(JSON.stringify(DEFAULT_PTS)), normas: JSON.parse(JSON.stringify(DEFAULT_NORMAS)) };
+    cache.normasRaw = [];
     cache.bonusRondas = getDefaultBonusRondas();
     await saveNormasToSupabase();
   }
@@ -377,7 +380,7 @@ function closeSpecialResultModal(){ document.getElementById('modal-special-resul
 async function saveCustomSpecialResult(){
   const id=document.getElementById('sr-id').value;
   const val=document.getElementById('sr-val').value.trim();
-  const norma=cache.normas.find(n=>n.id===id);
+  const norma=(cache.normasRaw||[]).find(n=>n.id===id);
   if(!norma) return;
   norma.datos.resultado=val;
   const res = await sb.from('normas').update({datos:norma.datos}).eq('id',id);
@@ -557,7 +560,7 @@ function calcScore(uid){
   if(esp.campeon&&re.campeon&&esp.campeon===re.campeon) campeon_+=20;
   if(esp.subcampeon&&re.subcampeon&&esp.subcampeon===re.subcampeon) sub+=12;
 
-  (cache.normas||[]).forEach(n=>{
+  (cache.normasRaw||[]).forEach(n=>{
     if(n.tipo==='special_custom'){
       const d=n.datos;
       if(d.resultado && esp[d.id] && esp[d.id].toLowerCase()===d.resultado.toLowerCase()){
@@ -1477,7 +1480,7 @@ function renderEspeciales(){
 
   const customGrid = document.getElementById('custom-special-grid');
   if(customGrid){
-    const customs = cache.normas.filter(n=>n.tipo==='special_custom');
+    const customs = (cache.normasRaw||[]).filter(n=>n.tipo==='special_custom');
     customGrid.innerHTML = customs.map(n=>{
       const d = n.datos;
       const key = d.id;
