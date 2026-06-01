@@ -254,6 +254,7 @@ body {
   position: sticky; top: 0; z-index: 50; gap: 12px;
 }
 .topbar-left { min-width: 0; }
+.topbar-left { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin-right: 16px; }
 .topbar-title {
   font-family: 'Outfit', sans-serif;
   font-size: 18px; font-weight: 700; color: var(--text);
@@ -261,6 +262,7 @@ body {
 }
 .topbar-meta { font-size: 11px; color: var(--text3); margin-top: 1px; }
 .topbar-right { display: flex; gap: 8px; flex-shrink: 0; align-items: center; flex-wrap: wrap; }
+#btn-mobile-switch { display: none; }
 
 /* ── PAGES ── */
 .page { display: none; }
@@ -865,8 +867,9 @@ select.form-input { cursor: pointer; }
     gap: 8px;
   }
   .topbar-title { font-size: 15px; }
-  .topbar-meta { display: none; }
+  .topbar-left { margin-right: 0; }
   .topbar-right { gap: 6px; }
+  #btn-mobile-switch { display: inline-flex; }
   .topbar-right .btn { padding: 6px 10px; font-size: 12px; }
 
   /* Hero grid: 2 columnas en móvil */
