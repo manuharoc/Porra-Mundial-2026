@@ -181,3 +181,23 @@ const DEFAULT_NORMAS = [
   {title:'Horarios',desc:'CEST = hora española en verano (ET+6h). Horarios con * son de madrugada.'}
 ];
 
+const COUNTRY_CODES = {
+  'México': 'mx', 'Sudáfrica': 'za', 'Corea del Sur': 'kr', 'República Checa': 'cz',
+  'Canadá': 'ca', 'Suiza': 'ch', 'Qatar': 'qa', 'Bosnia': 'ba',
+  'Brasil': 'br', 'Marruecos': 'ma', 'Haití': 'ht', 'Escocia': 'gb-sct',
+  'Estados Unidos': 'us', 'Paraguay': 'py', 'Australia': 'au', 'Turquía': 'tr',
+  'Alemania': 'de', 'Curazao': 'cw', 'Costa de Marfil': 'ci', 'Ecuador': 'ec',
+  'Holanda': 'nl', 'Japón': 'jp', 'Túnez': 'tn', 'Suecia': 'se',
+  'Bélgica': 'be', 'Egipto': 'eg', 'Irán': 'ir', 'Nueva Zelanda': 'nz',
+  'España': 'es', 'Cabo Verde': 'cv', 'Arabia Saudí': 'sa', 'Uruguay': 'uy',
+  'Francia': 'fr', 'Senegal': 'sn', 'Noruega': 'no', 'Irak': 'iq',
+  'Argentina': 'ar', 'Argelia': 'dz', 'Austria': 'at', 'Jordania': 'jo',
+  'Portugal': 'pt', 'Colombia': 'co', 'Uzbekistán': 'uz', 'R.D. Congo': 'cd',
+  'Inglaterra': 'gb-eng', 'Croacia': 'hr', 'Ghana': 'gh', 'Panamá': 'pa'
+};
+
+function getFlagHtml(teamName) {
+  const code = COUNTRY_CODES[teamName];
+  if (!code) return '';
+  return `<span class="fi fi-${code}" style="margin-right: 6px; border-radius: 2px;"></span>`;
+}

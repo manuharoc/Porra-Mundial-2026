@@ -704,7 +704,7 @@ function renderNextMatches(){
   }
 
   c.innerHTML = matches.map(m => {
-    return `<div class="match-row"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div><div style="font-size:10px;color:var(--text3)">Grupo ${m.grupo}</div></div><div class="team-block"><div class="team-name-match">${m.local}</div></div><div class="score-center"><div class="score-vs">VS</div><div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${m.visitante}</div></div><div class="pred-block">${renderPredInputsHtml(m.key)}</div></div>`;
+    return `<div class="match-row"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div><div style="font-size:10px;color:var(--text3)">Grupo ${m.grupo}</div></div><div class="team-block"><div class="team-name-match">${getFlagHtml(m.local)}${m.local}</div></div><div class="score-center"><div class="score-vs">VS</div><div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${getFlagHtml(m.visitante)}${m.visitante}</div></div><div class="pred-block">${renderPredInputsHtml(m.key)}</div></div>`;
   }).join('');
 }
 
@@ -947,7 +947,7 @@ function renderGruposPred(){
         predHtml=renderPredInputsHtml(key); 
       }
       const isFilled = preds&&preds.gl!==''&&preds.gl!==undefined;
-      html+=`<div class="match-row ${isFilled ? 'has-pred' : ''}"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div></div><div class="team-block"><div class="team-name-match">${m.local}</div></div><div class="score-center">${hasRes?`<div class="score-display">${res.gl}–${res.gv}</div>`:'<div class="score-vs">VS</div>'}<div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${m.visitante}</div></div><div class="pred-block"><div class="pred-label">Tu predicción</div>${predHtml}</div></div>`;
+      html+=`<div class="match-row ${isFilled ? 'has-pred' : ''}"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div></div><div class="team-block"><div class="team-name-match">${getFlagHtml(m.local)}${m.local}</div></div><div class="score-center">${hasRes?`<div class="score-display">${res.gl}–${res.gv}</div>`:'<div class="score-vs">VS</div>'}<div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${getFlagHtml(m.visitante)}${m.visitante}</div></div><div class="pred-block"><div class="pred-label">Tu predicción</div>${predHtml}</div></div>`;
     });
     html+='</div>';
   });
@@ -1463,7 +1463,7 @@ function renderElimPred(){
         `;
       } else {
         localHtml = `
-          <div id="local-${m.code}" class="elim-team-label" style="font-weight:700">${displayLocal}</div>
+          <div id="local-${m.code}" class="elim-team-label" style="font-weight:700">${getFlagHtml(displayLocal)}${displayLocal}</div>
         `;
       }
 
@@ -1477,7 +1477,7 @@ function renderElimPred(){
         `;
       } else {
         visitanteHtml = `
-          <div id="visitante-${m.code}" class="elim-team-label" style="font-weight:700; text-align:right">${displayVisitante}</div>
+          <div id="visitante-${m.code}" class="elim-team-label" style="font-weight:700; text-align:right">${getFlagHtml(displayVisitante)}${displayVisitante}</div>
         `;
       }
 
@@ -1666,7 +1666,7 @@ function renderGruposTorneo(){
         <tbody>
           ${standings[g.id].map((eq,i)=>`<tr style="position:relative">
             ${i<2?'<td style="padding-left:14px;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--green)"></span>':'<td>'}
-              <div class="flag-name"><span class="team-flag-sm">⚽</span>${eq.name}</div></td>
+              <div class="flag-name">${getFlagHtml(eq.name)}${eq.name}</div></td>
             <td style="color:var(--text3);font-size:12px;text-align:center">${eq.pj}</td>
             <td style="color:var(--text3);font-size:12px;text-align:center">${eq.gd > 0 ? '+'+eq.gd : eq.gd}</td>
             <td style="color:var(--accent);font-weight:700;font-size:13px;text-align:center">${eq.pts}</td>
