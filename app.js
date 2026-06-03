@@ -677,11 +677,24 @@ function renderDashboard(){
     if (!cache.participantes.length) {
       supportedTeamsEl.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;width:100%">Ninguno todavía.</div>';
     } else {
-      let stHtml = '';
+      const myId = getMyId();
+      const miEquipoApoyado = ((cache.predicciones[myId]||{}).especiales||{}).equipo_apoyado || '';
+      
+      let stHtml = `
+        <div style="display:flex; flex-direction:column; gap:6px; margin-right:12px; padding-right:16px; border-right:1px solid var(--border2); flex-shrink:0;">
+          <div style="font-size:11px; color:var(--text2); font-weight:600;">Tú apoyas a:</div>
+          <select id="dash-my-team" class="form-input" style="padding:4px 8px; font-size:12px; min-height:30px; width: 130px;" onchange="saveMySupportedTeam(this.value)">
+            <option value="">— Ninguno —</option>
+            ${ALL_TEAMS.map(t => `<option value="${t}" ${miEquipoApoyado === t ? 'selected' : ''}>${t}</option>`).join('')}
+          </select>
+        </div>
+      `;
+      
+      let othersHtml = '';
       cache.participantes.forEach(p => {
         const equipoApoyado = ((cache.predicciones[p.id]||{}).especiales||{}).equipo_apoyado;
         if (equipoApoyado) {
-          stHtml += `
+          othersHtml += `
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; width:56px;">
               ${renderAvatarHtml(p, 'md')}
               <div style="font-size:10px; color:var(--text); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${p.name}</div>
@@ -690,10 +703,31 @@ function renderDashboard(){
           `;
         }
       });
-      if (!stHtml) stHtml = '<div style="color:var(--text3);font-size:12px;text-align:center;width:100%">Aún no hay equipos apoyados.</div>';
-      supportedTeamsEl.innerHTML = stHtml;
+      if (!othersHtml) othersHtml = '<div style="color:var(--text3);font-size:12px;align-self:center;">Aún no hay más equipos apoyados.</div>';
+      supportedTeamsEl.innerHTML = stHtml + othersHtml;
     }
   }
+
+async function saveMySupportedTeam(val) {
+  const uid = getMyId();
+  if(!uid) return;
+  if(val) {
+    await sb.from('predicciones_especiales').upsert({
+      participante_id: uid,
+      tipo: 'equipo_apoyado',
+      valor: val,
+      registrado_at: new Date().toISOString()
+    }, { onConflict: 'participante_id,tipo' });
+  } else {
+    await sb.from('predicciones_especiales').delete().match({ participante_id: uid, tipo: 'equipo_apoyado' });
+  }
+  if (!cache.predicciones[uid]) cache.predicciones[uid] = { grupos:{}, elim:{}, especiales:{}, especialesTs:{} };
+  if(val) cache.predicciones[uid].especiales.equipo_apoyado = val;
+  else delete cache.predicciones[uid].especiales.equipo_apoyado;
+  
+  showToast('✅ Selección guardada');
+  renderDashboard();
+}
 
 
   const leaderboardEl = document.getElementById('dash-leaderboard');
