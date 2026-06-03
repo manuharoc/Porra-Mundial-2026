@@ -593,17 +593,35 @@ function calcBonusRondas(uid){
 }
 
 // ===================== SCORING =====================
+function getNormaPts(fase, descSubstring, defaultVal) {
+  if (!cache.normas || !cache.normas.pts) return defaultVal;
+  const match = cache.normas.pts.find(p => p.fase === fase && p.desc.toLowerCase().includes(descSubstring.toLowerCase()));
+  if (match && match.pts !== undefined && match.pts !== null) return parseInt(match.pts);
+  return defaultVal;
+}
+
 function calcScore(uid){
   const preds = cache.predicciones[uid] || {};
   let grupos=0, r32=0, octavos=0, cuartos=0, semis=0, final_=0, campeon_=0, sub=0, customPts=0, exactMatches=0;
+  
+  const ptsExact = getNormaPts('Grupos', 'exacto', 3);
+  const ptsPartial = getNormaPts('Grupos', 'correcto', 1);
+  const ptsR32 = getNormaPts('Ronda 32', '', 4);
+  const ptsOctavos = getNormaPts('Octavos', '', 5);
+  const ptsCuartos = getNormaPts('Cuartos', '', 6);
+  const ptsSemis = getNormaPts('Semis', '', 8);
+  const ptsFinal = getNormaPts('Final', '', 10);
+  const ptsSub = getNormaPts('Subcampeón', '', 12);
+  const ptsCamp = getNormaPts('Campeón 🏆', '', 20);
+
   const gPreds = preds.grupos||{}, gRes = cache.resultados.grupos||{};
   for(const key in gPreds){
     const p=gPreds[key], r=gRes[key];
     if(!r||r.gl===''||r.gl===undefined) continue;
     const pg=parseInt(p.gl), pv=parseInt(p.gv), rg=parseInt(r.gl), rv=parseInt(r.gv);
-    if(pg===rg&&pv===rv){ grupos+=3; exactMatches++; continue; }
+    if(pg===rg&&pv===rv){ grupos+=ptsExact; exactMatches++; continue; }
     const pw=pg>pv?'L':pg<pv?'V':'D', rw=rg>rv?'L':rg<rv?'V':'D';
-    if(pw===rw) grupos+=1;
+    if(pw===rw) grupos+=ptsPartial;
   }
   const ePreds=preds.elim||{}, eRes=cache.resultados.elim||{};
   for(const code in ePreds){
@@ -615,15 +633,15 @@ function calcScore(uid){
     }
     if (w !== r) continue;
     const m=parseInt(code.replace('M',''));
-    if(m>=73&&m<=88) r32+=4;
-    else if(m>=89&&m<=96) octavos+=5;
-    else if(m>=97&&m<=100) cuartos+=6;
-    else if((m===101||m===102)) semis+=8;
-    else if(m===104) final_+=10;
+    if(m>=73&&m<=88) r32+=ptsR32;
+    else if(m>=89&&m<=96) octavos+=ptsOctavos;
+    else if(m>=97&&m<=100) cuartos+=ptsCuartos;
+    else if((m===101||m===102)) semis+=ptsSemis;
+    else if(m===104) final_+=ptsFinal;
   }
   const esp=preds.especiales||{}, re=cache.resultados.especiales||{};
-  if(esp.campeon&&re.campeon&&esp.campeon===re.campeon) campeon_+=20;
-  if(esp.subcampeon&&re.subcampeon&&esp.subcampeon===re.subcampeon) sub+=12;
+  if(esp.campeon&&re.campeon&&esp.campeon===re.campeon) campeon_+=ptsCamp;
+  if(esp.subcampeon&&re.subcampeon&&esp.subcampeon===re.subcampeon) sub+=ptsSub;
 
   (cache.normasRaw||[]).forEach(n=>{
     if(n.tipo==='special_custom'){
