@@ -115,12 +115,7 @@
           </div>
           <input type="file" id="setup-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarFile(this,'setup')">
         </div>
-        <div class="form-group">
-          <label class="form-label">Selección a la que apoyas</label>
-          <select class="form-input" id="setup-equipo">
-            <option value="">— Elige un país —</option>
-          </select>
-        </div>
+
         <div class="admin-badge-preview" id="step-2-badge">👑 Serás el administrador</div>
         <div style="display:flex;gap:10px;margin-top:20px">
           <button class="btn" onclick="backToStep1()">← Atrás</button>
@@ -225,10 +220,7 @@
           </div>
         </div>
 
-        <div class="section-title">🌍 Selecciones Apoyadas</div>
-        <div id="dash-supported-teams" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:12px; margin-bottom:24px; scrollbar-width:none;">
-          <div style="color:var(--text3);font-size:12px;">Cargando...</div>
-        </div>
+
 
         <div class="section-title">📅 Calendario</div>
         <div id="dashboard-calendar"></div>
@@ -514,12 +506,7 @@
       </div>
       <input type="file" id="add-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarFile(this,'add')">
     </div>
-    <div class="form-group">
-      <label class="form-label">Selección a la que apoya</label>
-      <select class="form-input" id="add-equipo">
-        <option value="">— Elige un país —</option>
-      </select>
-    </div>
+
     <button class="btn btn-accent btn-full" onclick="addParticipant()">Añadir participante</button>
   </div>
 </div>
@@ -584,9 +571,7 @@
   <button class="mobile-menu-item" onclick="closeMobileMenu();goto('participantes')">
     <span>👥</span> Participantes
   </button>
-  <button class="mobile-menu-item" onclick="closeMobileMenu();goto('especiales')">
-    <span>🌟</span> Especiales
-  </button>
+
   <button class="mobile-menu-item" onclick="closeMobileMenu();goto('grupos-torneo')">
     <span>🗂️</span> Grupos del Torneo
   </button>

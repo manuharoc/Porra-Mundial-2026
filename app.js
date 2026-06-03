@@ -338,15 +338,7 @@ async function setupFinish(){
     session = { liga_id, participante_id:partId };
   }
 
-  const equipoApoyado = document.getElementById('setup-equipo').value;
-  if (equipoApoyado) {
-    await sb.from('predicciones_especiales').upsert({
-      participante_id: session.participante_id,
-      tipo: 'equipo_apoyado',
-      valor: equipoApoyado,
-      registrado_at: new Date().toISOString()
-    }, { onConflict: 'participante_id,tipo' });
-  }
+
 
   currentViewUser = session.participante_id;
   await loadAllData();
@@ -672,62 +664,7 @@ function renderDashboard(){
   applySidebarProfile();
   renderCalendar();
 
-  const supportedTeamsEl = document.getElementById('dash-supported-teams');
-  if (supportedTeamsEl) {
-    if (!cache.participantes.length) {
-      supportedTeamsEl.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;width:100%">Ninguno todavía.</div>';
-    } else {
-      const myId = getMyId();
-      const miEquipoApoyado = ((cache.predicciones[myId]||{}).especiales||{}).equipo_apoyado || '';
-      
-      let stHtml = `
-        <div style="display:flex; flex-direction:column; gap:6px; margin-right:12px; padding-right:16px; border-right:1px solid var(--border2); flex-shrink:0;">
-          <div style="font-size:11px; color:var(--text2); font-weight:600;">Tú apoyas a:</div>
-          <select id="dash-my-team" class="form-input" style="padding:4px 8px; font-size:12px; min-height:30px; width: 130px;" onchange="saveMySupportedTeam(this.value)">
-            <option value="">— Ninguno —</option>
-            ${ALL_TEAMS.map(t => `<option value="${t}" ${miEquipoApoyado === t ? 'selected' : ''}>${t}</option>`).join('')}
-          </select>
-        </div>
-      `;
-      
-      let othersHtml = '';
-      cache.participantes.forEach(p => {
-        const equipoApoyado = ((cache.predicciones[p.id]||{}).especiales||{}).equipo_apoyado;
-        if (equipoApoyado) {
-          othersHtml += `
-            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; width:56px;">
-              ${renderAvatarHtml(p, 'md')}
-              <div style="font-size:10px; color:var(--text); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${p.name}</div>
-              <div style="font-size:16px;" title="${equipoApoyado}">${getFlagHtml(equipoApoyado)}</div>
-            </div>
-          `;
-        }
-      });
-      if (!othersHtml) othersHtml = '<div style="color:var(--text3);font-size:12px;align-self:center;">Aún no hay más equipos apoyados.</div>';
-      supportedTeamsEl.innerHTML = stHtml + othersHtml;
-    }
-  }
 
-async function saveMySupportedTeam(val) {
-  const uid = getMyId();
-  if(!uid) return;
-  if(val) {
-    await sb.from('predicciones_especiales').upsert({
-      participante_id: uid,
-      tipo: 'equipo_apoyado',
-      valor: val,
-      registrado_at: new Date().toISOString()
-    }, { onConflict: 'participante_id,tipo' });
-  } else {
-    await sb.from('predicciones_especiales').delete().match({ participante_id: uid, tipo: 'equipo_apoyado' });
-  }
-  if (!cache.predicciones[uid]) cache.predicciones[uid] = { grupos:{}, elim:{}, especiales:{}, especialesTs:{} };
-  if(val) cache.predicciones[uid].especiales.equipo_apoyado = val;
-  else delete cache.predicciones[uid].especiales.equipo_apoyado;
-  
-  showToast('✅ Selección guardada');
-  renderDashboard();
-}
 
 
   const leaderboardEl = document.getElementById('dash-leaderboard');
@@ -953,15 +890,7 @@ async function addParticipant(){
   }).select().single();
   if(error){ showToast('❌ Error: '+(error.message||'Error desconocido')); return; }
 
-  const equipoApoyado = document.getElementById('add-equipo').value;
-  if (equipoApoyado) {
-    await sb.from('predicciones_especiales').insert({
-      participante_id: data.id,
-      tipo: 'equipo_apoyado',
-      valor: equipoApoyado,
-      registrado_at: new Date().toISOString()
-    });
-  }
+
 
   cache.participantes.push(fromSbPart(data));
   delete _pendingPhoto['add'];
@@ -2314,11 +2243,7 @@ async function initApp(){
   showLoading(true);
   setLoadingText('Conectando con Supabase…');
 
-  const teamOpts = '<option value="">— Elige un país —</option>' + ALL_TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
-  const setupEq = document.getElementById('setup-equipo');
-  const addEq = document.getElementById('add-equipo');
-  if (setupEq) setupEq.innerHTML = teamOpts;
-  if (addEq) addEq.innerHTML = teamOpts;
+
 
   const oldSession = localStorage.getItem(SESSION_KEY);
   const multiStr = localStorage.getItem(MULTI_SESSION_KEY);
