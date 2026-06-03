@@ -603,17 +603,35 @@ function calcBonusRondas(uid){
 }
 
 // ===================== SCORING =====================
+function getNormaPts(fase, descSubstring, defaultVal) {
+  if (!cache.normas || !cache.normas.pts) return defaultVal;
+  const match = cache.normas.pts.find(p => p.fase === fase && p.desc.toLowerCase().includes(descSubstring.toLowerCase()));
+  if (match && match.pts !== undefined && match.pts !== null) return parseInt(match.pts);
+  return defaultVal;
+}
+
 function calcScore(uid){
   const preds = cache.predicciones[uid] || {};
   let grupos=0, r32=0, octavos=0, cuartos=0, semis=0, final_=0, campeon_=0, sub=0, customPts=0, exactMatches=0;
+  
+  const ptsExact = getNormaPts('Grupos', 'exacto', 3);
+  const ptsPartial = getNormaPts('Grupos', 'correcto', 1);
+  const ptsR32 = getNormaPts('Ronda 32', '', 4);
+  const ptsOctavos = getNormaPts('Octavos', '', 5);
+  const ptsCuartos = getNormaPts('Cuartos', '', 6);
+  const ptsSemis = getNormaPts('Semis', '', 8);
+  const ptsFinal = getNormaPts('Final', '', 10);
+  const ptsSub = getNormaPts('Subcampeón', '', 12);
+  const ptsCamp = getNormaPts('Campeón 🏆', '', 20);
+
   const gPreds = preds.grupos||{}, gRes = cache.resultados.grupos||{};
   for(const key in gPreds){
     const p=gPreds[key], r=gRes[key];
     if(!r||r.gl===''||r.gl===undefined) continue;
     const pg=parseInt(p.gl), pv=parseInt(p.gv), rg=parseInt(r.gl), rv=parseInt(r.gv);
-    if(pg===rg&&pv===rv){ grupos+=3; exactMatches++; continue; }
+    if(pg===rg&&pv===rv){ grupos+=ptsExact; exactMatches++; continue; }
     const pw=pg>pv?'L':pg<pv?'V':'D', rw=rg>rv?'L':rg<rv?'V':'D';
-    if(pw===rw) grupos+=1;
+    if(pw===rw) grupos+=ptsPartial;
   }
   const ePreds=preds.elim||{}, eRes=cache.resultados.elim||{};
   for(const code in ePreds){
@@ -625,15 +643,15 @@ function calcScore(uid){
     }
     if (w !== r) continue;
     const m=parseInt(code.replace('M',''));
-    if(m>=73&&m<=88) r32+=4;
-    else if(m>=89&&m<=96) octavos+=5;
-    else if(m>=97&&m<=100) cuartos+=6;
-    else if((m===101||m===102)) semis+=8;
-    else if(m===104) final_+=10;
+    if(m>=73&&m<=88) r32+=ptsR32;
+    else if(m>=89&&m<=96) octavos+=ptsOctavos;
+    else if(m>=97&&m<=100) cuartos+=ptsCuartos;
+    else if((m===101||m===102)) semis+=ptsSemis;
+    else if(m===104) final_+=ptsFinal;
   }
   const esp=preds.especiales||{}, re=cache.resultados.especiales||{};
-  if(esp.campeon&&re.campeon&&esp.campeon===re.campeon) campeon_+=20;
-  if(esp.subcampeon&&re.subcampeon&&esp.subcampeon===re.subcampeon) sub+=12;
+  if(esp.campeon&&re.campeon&&esp.campeon===re.campeon) campeon_+=ptsCamp;
+  if(esp.subcampeon&&re.subcampeon&&esp.subcampeon===re.subcampeon) sub+=ptsSub;
 
   (cache.normasRaw||[]).forEach(n=>{
     if(n.tipo==='special_custom'){
@@ -652,7 +670,7 @@ function calcScore(uid){
 function renderDashboard(){
   document.getElementById('dash-participantes').textContent = cache.participantes.length;
   applySidebarProfile();
-  renderNextMatches();
+  renderCalendar();
 
   const supportedTeamsEl = document.getElementById('dash-supported-teams');
   if (supportedTeamsEl) {
@@ -707,39 +725,132 @@ function renderDashboard(){
   }
 }
 
-function renderNextMatches(){
-  const c = document.getElementById('next-matches-list');
+let currentCalendarDate = null;
+
+function renderCalendar(dateStr) {
+  const c = document.getElementById('dashboard-calendar');
   if(!c) return;
   
-  let upcoming = [];
+  // 1. Collect all matches
+  const allMatches = [];
+  
+  // Grupos
   GRUPOS.forEach(g => {
     g.partidos.forEach(m => {
       const key = `G${g.id}_${m.n}`;
       const res = (cache.resultados.grupos || {})[key];
-      // Include matches that don't have a result yet
-      if (!res || res.gl === '' || res.gl === undefined) {
-        const parts = m.fecha.split(' ');
-        const day = parseInt(parts[0]);
-        const month = parts[1].toLowerCase().startsWith('jun') ? 5 : 6;
-        const [h, min] = m.hora.split(':').map(x => parseInt(x, 10));
-        const ts = new Date(2026, month, day, h, min).getTime();
-        upcoming.push({ ...m, grupo: g.id, key, ts });
-      }
+      const isPlayed = res && res.gl !== '' && res.gl !== undefined;
+      const resultText = isPlayed ? `${res.gl} – ${res.gv}` : '';
+      allMatches.push({ ...m, stage: `Grupo ${g.id}`, key, isPlayed, resultText, isElim: false });
+    });
+  });
+  
+  // Eliminatorias
+  ELIM_PHASES.forEach(phase => {
+    // Short name
+    let shortName = phase.name.replace(/^[🏆🥉🟣🟢🟠🔵] /,'').split(' —')[0];
+    phase.partidos.forEach(m => {
+      const localResolved = resolveTeamForSlot(m.local, null) || m.local;
+      const visitanteResolved = resolveTeamForSlot(m.visitante, null) || m.visitante;
+      const res = (cache.resultados.elim || {})[m.code];
+      const isPlayed = !!res;
+      const resultText = isPlayed ? `✓ ${res}` : '';
+      allMatches.push({ ...m, local: localResolved, visitante: visitanteResolved, stage: shortName, key: m.code, isPlayed, resultText, isElim: true });
     });
   });
 
-  // Sort chronologically and take first 4
-  upcoming.sort((a, b) => a.ts - b.ts);
-  const matches = upcoming.slice(0, 4);
-
-  if (!matches.length) {
-    c.innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px">No hay partidos próximos en fase de grupos.</div>';
-    return;
+  // Extract unique dates (only the day and month, like "11 jun")
+  const uniqueDates = [...new Set(allMatches.map(m => {
+    const parts = m.fecha.split(' ');
+    return parts[0] + ' ' + parts[1].toLowerCase();
+  }))];
+  
+  // Sort them chronologically
+  uniqueDates.sort((a,b) => {
+    const parseDate = (d) => {
+      const parts = d.split(' ');
+      const day = parseInt(parts[0]);
+      const month = parts[1].startsWith('jun') ? 5 : 6;
+      return new Date(2026, month, day).getTime();
+    };
+    return parseDate(a) - parseDate(b);
+  });
+  
+  if (!currentCalendarDate) {
+    const today = new Date();
+    const todayStr = `${today.getDate()} ${today.getMonth() === 5 ? 'jun' : 'jul'}`;
+    if (uniqueDates.includes(todayStr)) {
+      currentCalendarDate = todayStr;
+    } else {
+      currentCalendarDate = uniqueDates[0];
+    }
   }
-
-  c.innerHTML = matches.map(m => {
-    return `<div class="match-row"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div><div style="font-size:10px;color:var(--text3)">Grupo ${m.grupo}</div></div><div class="team-block"><div class="team-name-match">${getFlagHtml(m.local)}${m.local}</div></div><div class="score-center"><div class="score-vs">VS</div><div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${getFlagHtml(m.visitante)}${m.visitante}</div></div><div class="pred-block">${renderPredInputsHtml(m.key)}</div></div>`;
-  }).join('');
+  
+  if (dateStr) currentCalendarDate = dateStr;
+  
+  // Build Nav
+  let html = '<div class="calendar-nav">';
+  uniqueDates.forEach(d => {
+    const act = d === currentCalendarDate ? ' active' : '';
+    html += `<div class="calendar-day-pill${act}" onclick="renderCalendar('${d}')">${d}</div>`;
+  });
+  html += '</div>';
+  
+  // Build matches for selected date
+  html += '<div class="calendar-matches">';
+  const dayMatches = allMatches.filter(m => m.fecha.toLowerCase().startsWith(currentCalendarDate));
+  
+  // Sort by time
+  dayMatches.sort((a,b) => {
+    const ah = parseInt(a.hora.replace('*','').split(':')[0]);
+    const am = parseInt(a.hora.replace('*','').split(':')[1]);
+    const bh = parseInt(b.hora.replace('*','').split(':')[0]);
+    const bm = parseInt(b.hora.replace('*','').split(':')[1]);
+    return (ah*60+am) - (bh*60+bm);
+  });
+  
+  if (!dayMatches.length) {
+    html += '<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px">No hay partidos este día.</div>';
+  } else {
+    dayMatches.forEach(m => {
+      let resHtml = '';
+      if (m.isPlayed) {
+        resHtml = `<div class="cal-match-result ${m.isElim ? 'elim' : ''}">${m.resultText}</div>`;
+      } else {
+        resHtml = `<div style="font-size:12px;color:var(--text3);font-weight:700">VS</div>`;
+      }
+      
+      const localFlag = ALL_TEAMS.includes(m.local) ? getFlagHtml(m.local) : '';
+      const visitanteFlag = ALL_TEAMS.includes(m.visitante) ? getFlagHtml(m.visitante) : '';
+      
+      html += `
+        <div class="cal-match-row">
+          <div class="cal-match-info">
+            <div class="cal-match-time">${m.stage} · ${m.hora}</div>
+            <div class="cal-match-teams">
+              <span>${localFlag}${m.local}</span> 
+              <span style="color:var(--text3);font-size:10px;margin:0 4px">—</span> 
+              <span>${visitanteFlag}${m.visitante}</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px">${m.sede}</div>
+          </div>
+          ${resHtml}
+        </div>
+      `;
+    });
+  }
+  html += '</div>';
+  
+  c.innerHTML = html;
+  
+  // Auto-scroll the nav to the active pill
+  setTimeout(() => {
+    const nav = document.querySelector('.calendar-nav');
+    const activePill = nav?.querySelector('.active');
+    if (nav && activePill) {
+      activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, 50);
 }
 
 // ===================== RANKING =====================
@@ -1235,8 +1346,83 @@ function getPossibleTeamsForSlot(slot) {
   return ALL_TEAMS;
 }
 
+let r32Memo = { uid: null, map: null, ts: 0 };
+function getPredictedR32(uid) {
+  if (r32Memo.uid === uid && Date.now() - r32Memo.ts < 1000) return r32Memo.map;
+  
+  const standings = getPredictedStandings(uid);
+  const mapping = {};
+  
+  GRUPOS.forEach(g => {
+    mapping[`1°${g.id}`] = standings[g.id][0].name;
+    mapping[`2°${g.id}`] = standings[g.id][1].name;
+  });
+
+  let thirds = [];
+  GRUPOS.forEach(g => {
+    thirds.push({ group: g.id, team: standings[g.id][2] });
+  });
+  thirds.sort((a, b) => {
+    if (b.team.pts !== a.team.pts) return b.team.pts - a.team.pts;
+    if (b.team.gd !== a.team.gd) return b.team.gd - a.team.gd;
+    return b.team.gf - a.team.gf;
+  });
+  
+  const top8Thirds = thirds.slice(0, 8);
+  const thirdSlots = [
+    { key: '3er C/D/F/G/H', groups: ['C','D','F','G','H'] },
+    { key: '3er A/B/C/D/E', groups: ['A','B','C','D','E'] },
+    { key: '3er C/E/F/H/I', groups: ['C','E','F','H','I'] },
+    { key: '3er E/H/I/J/K', groups: ['E','H','I','J','K'] },
+    { key: '3er B/D/F/I/J', groups: ['B','D','F','I','J'] },
+    { key: '3er A/E/H/I/J', groups: ['A','E','H','I','J'] },
+    { key: '3er E/F/G/I/J', groups: ['E','F','G','I','J'] },
+    { key: '3er D/E/I/J/L', groups: ['D','E','I','J','L'] }
+  ];
+
+  let assigned = {}; 
+  let usedGroups = new Set();
+  
+  function solve(slotIndex) {
+    if (slotIndex === thirdSlots.length) return true;
+    const slot = thirdSlots[slotIndex];
+    for (const t of top8Thirds) {
+      if (!usedGroups.has(t.group) && slot.groups.includes(t.group)) {
+        assigned[slot.key] = t.team.name;
+        usedGroups.add(t.group);
+        if (solve(slotIndex + 1)) return true;
+        usedGroups.delete(t.group);
+        delete assigned[slot.key];
+      }
+    }
+    return false;
+  }
+  
+  if (solve(0)) {
+    Object.assign(mapping, assigned);
+  } else {
+    top8Thirds.forEach(t => {
+      const slot = thirdSlots.find(s => s.groups.includes(t.group) && !assigned[s.key]);
+      if (slot) {
+        assigned[slot.key] = t.team.name;
+        usedGroups.add(t.group);
+      }
+    });
+    Object.assign(mapping, assigned);
+  }
+  
+  r32Memo = { uid, map: mapping, ts: Date.now() };
+  return mapping;
+}
+
 function resolveTeamForSlot(slot, uid) {
   if (!uid) return slot;
+
+  if (slot.match(/^[12]°[A-L]$/) || slot.startsWith('3er')) {
+    const r32Map = getPredictedR32(uid);
+    if (r32Map[slot]) return r32Map[slot];
+  }
+
   const preds = cache.predicciones[uid] || {};
   const elimPreds = preds.elim || {};
 
@@ -1386,50 +1572,21 @@ function updateWinnerDropdown(code) {
   }
 }
 
-function handleElimGoalsChange(code) {
-  const glEl = document.getElementById('gl-' + code);
-  const gvEl = document.getElementById('gv-' + code);
-  const winnerEl = document.getElementById('winner-' + code);
-  if (!glEl || !gvEl || !winnerEl) return;
-
-  const glVal = glEl.value;
-  const gvVal = gvEl.value;
-  if (glVal !== '' && gvVal !== '') {
-    const gl = parseInt(glVal);
-    const gv = parseInt(gvVal);
-    const localEl = document.getElementById('local-' + code);
-    const visitanteEl = document.getElementById('visitante-' + code);
-    const localVal = localEl ? (localEl.value || localEl.textContent || '').trim() : '';
-    const visitanteVal = visitanteEl ? (visitanteEl.value || visitanteEl.textContent || '').trim() : '';
-
-    if (gl > gv && localVal && ALL_TEAMS.includes(localVal)) {
-      winnerEl.value = localVal;
-    } else if (gl < gv && visitanteVal && ALL_TEAMS.includes(visitanteVal)) {
-      winnerEl.value = visitanteVal;
-    }
-  }
-  saveElimPredRow(code);
-}
-
 async function saveElimPredRow(code) {
   const uid = currentViewUser;
   if (!uid) { showToast('Selecciona un participante primero'); return; }
 
   const localEl = document.getElementById('local-' + code);
   const visitanteEl = document.getElementById('visitante-' + code);
-  const glEl = document.getElementById('gl-' + code);
-  const gvEl = document.getElementById('gv-' + code);
   const winnerEl = document.getElementById('winner-' + code);
 
   const local = localEl ? (localEl.value || localEl.textContent || '').trim() : '';
   const visitante = visitanteEl ? (visitanteEl.value || visitanteEl.textContent || '').trim() : '';
-  const gl = glEl && glEl.value !== '' ? parseInt(glEl.value) : null;
-  const gv = gvEl && gvEl.value !== '' ? parseInt(gvEl.value) : null;
   const ganador = winnerEl ? winnerEl.value : '';
 
   if (!cache.predicciones[uid]) cache.predicciones[uid] = { grupos:{}, elim:{}, especiales:{}, especialesTs:{} };
 
-  const data = { local, visitante, goles_local: gl, goles_visitante: gv, ganador };
+  const data = { local, visitante, ganador };
   const jsonStr = JSON.stringify(data);
   cache.predicciones[uid].elim[code] = jsonStr;
 
@@ -1443,17 +1600,63 @@ async function saveElimPredRow(code) {
     showToast('❌ Error al guardar');
   } else {
     showToast('✅ Guardado');
-    renderElimPred();
+    if (typeof currentElimView !== 'undefined' && currentElimView === 'bracket') {
+      renderElimBracketView();
+    } else {
+      renderElimListView();
+    }
   }
 }
 
 // ===================== PRED ELIM =====================
+let currentElimView = 'list';
+
 function renderElimPred(){
   const c=document.getElementById('elim-pred-content');
   if(!c) return;
-  document.getElementById('pred-user-selector-elim').innerHTML=renderUserSelector('switchPredUserElim');
-  if(!cache.participantes.length){ c.innerHTML='<div class="empty-state"><div class="ei">👥</div><p>Añade participantes primero.</p></div>'; return; }
   
+  let headerHtml = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+      <div id="pred-user-selector-elim"></div>
+      <div class="view-toggle" style="display:flex; gap:8px;">
+        <button id="btn-view-list" class="btn btn-sm ${currentElimView === 'list' ? 'btn-accent' : ''}" onclick="toggleElimView('list')">Vista Lista</button>
+        <button id="btn-view-bracket" class="btn btn-sm ${currentElimView === 'bracket' ? 'btn-accent' : ''}" onclick="toggleElimView('bracket')">Vista Cuadro</button>
+      </div>
+    </div>
+    <div id="elim-view-container"></div>
+  `;
+  c.innerHTML = headerHtml;
+  document.getElementById('pred-user-selector-elim').innerHTML=renderUserSelector('switchPredUserElim');
+  
+  if(!cache.participantes.length){ 
+    document.getElementById('elim-view-container').innerHTML='<div class="empty-state"><div class="ei">👥</div><p>Añade participantes primero.</p></div>'; 
+    return; 
+  }
+
+  if (currentElimView === 'bracket') {
+    renderElimBracketView();
+  } else {
+    renderElimListView();
+  }
+}
+
+function toggleElimView(view) {
+  currentElimView = view;
+  const bl = document.getElementById('btn-view-list');
+  const bb = document.getElementById('btn-view-bracket');
+  if(bl) bl.className = view === 'list' ? 'btn btn-sm btn-accent' : 'btn btn-sm';
+  if(bb) bb.className = view === 'bracket' ? 'btn btn-sm btn-accent' : 'btn btn-sm';
+  
+  if (view === 'list') {
+    renderElimListView();
+  } else {
+    renderElimBracketView();
+  }
+}
+
+function renderElimListView() {
+  const container = document.getElementById('elim-view-container');
+  if (!container) return;
   const uid=currentViewUser;
   const isMe = uid === getMyId();
   const disStr = isMe ? '' : ' disabled';
@@ -1463,68 +1666,17 @@ function renderElimPred(){
     html+=`<div class="bracket-phase"><div class="bracket-phase-title">${phase.name}</div>`;
     phase.partidos.forEach(m=>{
       const predVal = uid ? (((cache.predicciones[uid]||{}).elim||{})[m.code]) : null;
-      let predLocal = '';
-      let predVisitante = '';
-      let predGl = '';
-      let predGv = '';
       let predWinner = '';
-
       if (predVal) {
         if (predVal.startsWith('{')) {
-          try {
-            const parsed = JSON.parse(predVal);
-            predLocal = parsed.local || '';
-            predVisitante = parsed.visitante || '';
-            predGl = parsed.goles_local !== undefined && parsed.goles_local !== null ? parsed.goles_local : '';
-            predGv = parsed.goles_visitante !== undefined && parsed.goles_visitante !== null ? parsed.goles_visitante : '';
-            predWinner = parsed.ganador || '';
-          } catch(e) {
-            predWinner = predVal;
-          }
+          try { predWinner = JSON.parse(predVal).ganador || ''; } catch(e) { predWinner = predVal; }
         } else {
           predWinner = predVal;
         }
       }
 
-      const resolvedLocalDefault = resolveTeamForSlot(m.local, uid);
-      const resolvedVisitanteDefault = resolveTeamForSlot(m.visitante, uid);
-
-      const displayLocal = predLocal || resolvedLocalDefault;
-      const displayVisitante = predVisitante || resolvedVisitanteDefault;
-
-      const isLocalSelect = !m.local.startsWith('W') && !m.local.startsWith('Ganador') && !m.local.startsWith('Perdedor');
-      const isVisitanteSelect = !m.visitante.startsWith('W') && !m.visitante.startsWith('Ganador') && !m.visitante.startsWith('Perdedor');
-
-      const possibleLocals = getPossibleTeamsForSlot(m.local);
-      const possibleVisitantes = getPossibleTeamsForSlot(m.visitante);
-
-      let localHtml = '';
-      if (isLocalSelect) {
-        localHtml = `
-          <select id="local-${m.code}" class="winner-select" style="font-weight:700" onchange="updateWinnerDropdown('${m.code}'); saveElimPredRow('${m.code}');"${disStr}>
-            <option value="">— ${m.local} —</option>
-            ${possibleLocals.map(t => `<option value="${t}" ${displayLocal === t ? 'selected' : ''}>${t}</option>`).join('')}
-          </select>
-        `;
-      } else {
-        localHtml = `
-          <div id="local-${m.code}" class="elim-team-label" style="font-weight:700">${getFlagHtml(displayLocal)}${displayLocal}</div>
-        `;
-      }
-
-      let visitanteHtml = '';
-      if (isVisitanteSelect) {
-        visitanteHtml = `
-          <select id="visitante-${m.code}" class="winner-select" style="font-weight:700; text-align:right" onchange="updateWinnerDropdown('${m.code}'); saveElimPredRow('${m.code}');"${disStr}>
-            <option value="">— ${m.visitante} —</option>
-            ${possibleVisitantes.map(t => `<option value="${t}" ${displayVisitante === t ? 'selected' : ''}>${t}</option>`).join('')}
-          </select>
-        `;
-      } else {
-        visitanteHtml = `
-          <div id="visitante-${m.code}" class="elim-team-label" style="font-weight:700; text-align:right">${getFlagHtml(displayVisitante)}${displayVisitante}</div>
-        `;
-      }
+      const displayLocal = resolveTeamForSlot(m.local, uid);
+      const displayVisitante = resolveTeamForSlot(m.visitante, uid);
 
       const res=(cache.resultados.elim||{})[m.code];
       const vsText = res ? `<span class="sa-result-tag">✓ ${res}</span>` : 'VS';
@@ -1532,11 +1684,9 @@ function renderElimPred(){
       html+=`
         <div class="elim-row ${predVal ? 'has-pred' : ''}">
           <div class="match-code">${m.code}<br><span style="font-size:10px;color:var(--text3)">${m.fecha}</span></div>
-          ${localHtml}
-          <input type="number" min="0" placeholder="-" id="gl-${m.code}" class="elim-score-inp" value="${predGl}" oninput="handleElimGoalsChange('${m.code}')"${disStr}>
+          <div id="local-${m.code}" class="elim-team-label" style="font-weight:700">${getFlagHtml(displayLocal)}${displayLocal}</div>
           <div class="elim-vs">${vsText}</div>
-          <input type="number" min="0" placeholder="-" id="gv-${m.code}" class="elim-score-inp" value="${predGv}" oninput="handleElimGoalsChange('${m.code}')"${disStr}>
-          ${visitanteHtml}
+          <div id="visitante-${m.code}" class="elim-team-label" style="font-weight:700; text-align:right">${getFlagHtml(displayVisitante)}${displayVisitante}</div>
           <div class="elim-winner-block">
             <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" onchange="saveElimPredRow('${m.code}')"${disStr}>
               <option value="">— Ganador —</option>
@@ -1549,7 +1699,66 @@ function renderElimPred(){
     });
     html+='</div>';
   });
-  c.innerHTML=html;
+  container.innerHTML=html;
+}
+
+function renderElimBracketView() {
+  const container = document.getElementById('elim-view-container');
+  if (!container) return;
+  const uid=currentViewUser;
+  const isMe = uid === getMyId();
+  const disStr = isMe ? '' : ' disabled';
+
+  let html = '<div class="bracket-wrapper"><div class="bracket-layout">';
+  
+  ELIM_PHASES.forEach(phase => {
+    if (phase.name.includes('Tercer Puesto')) return; // Skip 3rd place in standard bracket view
+    
+    // Shorten phase names
+    let shortName = phase.name.replace(/^[🏆🥉🟣🟢🟠🔵] /,'').split(' —')[0];
+    
+    html += `<div class="bracket-column">`;
+    html += `<div class="bracket-col-title">${shortName}</div>`;
+    
+    phase.partidos.forEach(m => {
+      const predVal = uid ? (((cache.predicciones[uid]||{}).elim||{})[m.code]) : null;
+      let predWinner = '';
+      if (predVal) {
+        if (predVal.startsWith('{')) {
+          try { predWinner = JSON.parse(predVal).ganador || ''; } catch(e) { predWinner = predVal; }
+        } else {
+          predWinner = predVal;
+        }
+      }
+
+      const displayLocal = resolveTeamForSlot(m.local, uid);
+      const displayVisitante = resolveTeamForSlot(m.visitante, uid);
+
+      html += `
+        <div class="bracket-match">
+          <div class="bm-code">${m.code} <span style="font-size:9px;color:var(--text3);margin-left:4px">${m.fecha}</span></div>
+          <div class="bm-team ${predWinner === displayLocal && predWinner ? 'winner' : ''}">${getFlagHtml(displayLocal)} ${displayLocal || '—'}</div>
+          <div class="bm-team ${predWinner === displayVisitante && predWinner ? 'winner' : ''}">${getFlagHtml(displayVisitante)} ${displayVisitante || '—'}</div>
+          <div style="margin-top:6px; display:none;">
+            <input type="hidden" id="local-${m.code}" value="${displayLocal}">
+            <input type="hidden" id="visitante-${m.code}" value="${displayVisitante}">
+          </div>
+          <div style="margin-top:6px">
+            <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" style="width:100%; font-size:12px; padding:4px;" onchange="saveElimPredRow('${m.code}')"${disStr}>
+              <option value="">— Seleccionar —</option>
+              ${displayLocal && ALL_TEAMS.includes(displayLocal) ? `<option value="${displayLocal}" ${predWinner === displayLocal ? 'selected' : ''}>${displayLocal}</option>` : ''}
+              ${displayVisitante && ALL_TEAMS.includes(displayVisitante) ? `<option value="${displayVisitante}" ${predWinner === displayVisitante ? 'selected' : ''}>${displayVisitante}</option>` : ''}
+            </select>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += `</div>`; // End column
+  });
+  
+  html += '</div></div>';
+  container.innerHTML = html;
 }
 
 // ===================== ESPECIALES =====================
