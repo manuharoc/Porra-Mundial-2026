@@ -704,7 +704,7 @@ function renderNextMatches(){
   }
 
   c.innerHTML = matches.map(m => {
-    return `<div class="match-row"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div><div style="font-size:10px;color:var(--text3)">Grupo ${m.grupo}</div></div><div class="team-block"><div class="team-name-match">${getFlagHtml(m.local)}${m.local}</div></div><div class="score-center"><div class="score-vs">VS</div><div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${getFlagHtml(m.visitante)}${m.visitante}</div></div><div class="pred-block">${renderPredInputsHtml(m.key)}</div></div>`;
+    return `<div class="match-row"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div><div style="font-size:10px;color:var(--text3)">Grupo ${m.grupo}</div></div><div class="team-block"><div class="team-name-match">${getFlagHtml(m.local)}${m.local}</div></div><div class="score-center"><div class="score-vs">VS</div><div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${getFlagHtml(m.visitante)}${m.visitante}</div></div><div class="pred-block" style="justify-content:center"><button class="btn btn-sm" style="width:100%" onclick="goto('grupos-pred')">Ir a pronósticos</button></div></div>`;
   }).join('');
 }
 
@@ -1190,8 +1190,83 @@ function getPossibleTeamsForSlot(slot) {
   return ALL_TEAMS;
 }
 
+let r32Memo = { uid: null, map: null, ts: 0 };
+function getPredictedR32(uid) {
+  if (r32Memo.uid === uid && Date.now() - r32Memo.ts < 1000) return r32Memo.map;
+  
+  const standings = getPredictedStandings(uid);
+  const mapping = {};
+  
+  GRUPOS.forEach(g => {
+    mapping[`1°${g.id}`] = standings[g.id][0].name;
+    mapping[`2°${g.id}`] = standings[g.id][1].name;
+  });
+
+  let thirds = [];
+  GRUPOS.forEach(g => {
+    thirds.push({ group: g.id, team: standings[g.id][2] });
+  });
+  thirds.sort((a, b) => {
+    if (b.team.pts !== a.team.pts) return b.team.pts - a.team.pts;
+    if (b.team.gd !== a.team.gd) return b.team.gd - a.team.gd;
+    return b.team.gf - a.team.gf;
+  });
+  
+  const top8Thirds = thirds.slice(0, 8);
+  const thirdSlots = [
+    { key: '3er C/D/F/G/H', groups: ['C','D','F','G','H'] },
+    { key: '3er A/B/C/D/E', groups: ['A','B','C','D','E'] },
+    { key: '3er C/E/F/H/I', groups: ['C','E','F','H','I'] },
+    { key: '3er E/H/I/J/K', groups: ['E','H','I','J','K'] },
+    { key: '3er B/D/F/I/J', groups: ['B','D','F','I','J'] },
+    { key: '3er A/E/H/I/J', groups: ['A','E','H','I','J'] },
+    { key: '3er E/F/G/I/J', groups: ['E','F','G','I','J'] },
+    { key: '3er D/E/I/J/L', groups: ['D','E','I','J','L'] }
+  ];
+
+  let assigned = {}; 
+  let usedGroups = new Set();
+  
+  function solve(slotIndex) {
+    if (slotIndex === thirdSlots.length) return true;
+    const slot = thirdSlots[slotIndex];
+    for (const t of top8Thirds) {
+      if (!usedGroups.has(t.group) && slot.groups.includes(t.group)) {
+        assigned[slot.key] = t.team.name;
+        usedGroups.add(t.group);
+        if (solve(slotIndex + 1)) return true;
+        usedGroups.delete(t.group);
+        delete assigned[slot.key];
+      }
+    }
+    return false;
+  }
+  
+  if (solve(0)) {
+    Object.assign(mapping, assigned);
+  } else {
+    top8Thirds.forEach(t => {
+      const slot = thirdSlots.find(s => s.groups.includes(t.group) && !assigned[s.key]);
+      if (slot) {
+        assigned[slot.key] = t.team.name;
+        usedGroups.add(t.group);
+      }
+    });
+    Object.assign(mapping, assigned);
+  }
+  
+  r32Memo = { uid, map: mapping, ts: Date.now() };
+  return mapping;
+}
+
 function resolveTeamForSlot(slot, uid) {
   if (!uid) return slot;
+
+  if (slot.match(/^[12]°[A-L]$/) || slot.startsWith('3er')) {
+    const r32Map = getPredictedR32(uid);
+    if (r32Map[slot]) return r32Map[slot];
+  }
+
   const preds = cache.predicciones[uid] || {};
   const elimPreds = preds.elim || {};
 
@@ -1447,8 +1522,8 @@ function renderElimPred(){
       const displayLocal = predLocal || resolvedLocalDefault;
       const displayVisitante = predVisitante || resolvedVisitanteDefault;
 
-      const isLocalSelect = !m.local.startsWith('W') && !m.local.startsWith('Ganador') && !m.local.startsWith('Perdedor');
-      const isVisitanteSelect = !m.visitante.startsWith('W') && !m.visitante.startsWith('Ganador') && !m.visitante.startsWith('Perdedor');
+      const isLocalSelect = false;
+      const isVisitanteSelect = false;
 
       const possibleLocals = getPossibleTeamsForSlot(m.local);
       const possibleVisitantes = getPossibleTeamsForSlot(m.visitante);
