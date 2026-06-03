@@ -660,7 +660,7 @@ function calcScore(uid){
 function renderDashboard(){
   document.getElementById('dash-participantes').textContent = cache.participantes.length;
   applySidebarProfile();
-  renderNextMatches();
+  renderCalendar();
 
   const leaderboardEl = document.getElementById('dash-leaderboard');
   if (leaderboardEl) {
@@ -691,39 +691,132 @@ function renderDashboard(){
   }
 }
 
-function renderNextMatches(){
-  const c = document.getElementById('next-matches-list');
+let currentCalendarDate = null;
+
+function renderCalendar(dateStr) {
+  const c = document.getElementById('dashboard-calendar');
   if(!c) return;
   
-  let upcoming = [];
+  // 1. Collect all matches
+  const allMatches = [];
+  
+  // Grupos
   GRUPOS.forEach(g => {
     g.partidos.forEach(m => {
       const key = `G${g.id}_${m.n}`;
       const res = (cache.resultados.grupos || {})[key];
-      // Include matches that don't have a result yet
-      if (!res || res.gl === '' || res.gl === undefined) {
-        const parts = m.fecha.split(' ');
-        const day = parseInt(parts[0]);
-        const month = parts[1].toLowerCase().startsWith('jun') ? 5 : 6;
-        const [h, min] = m.hora.split(':').map(x => parseInt(x, 10));
-        const ts = new Date(2026, month, day, h, min).getTime();
-        upcoming.push({ ...m, grupo: g.id, key, ts });
-      }
+      const isPlayed = res && res.gl !== '' && res.gl !== undefined;
+      const resultText = isPlayed ? `${res.gl} – ${res.gv}` : '';
+      allMatches.push({ ...m, stage: `Grupo ${g.id}`, key, isPlayed, resultText, isElim: false });
+    });
+  });
+  
+  // Eliminatorias
+  ELIM_PHASES.forEach(phase => {
+    // Short name
+    let shortName = phase.name.replace(/^[🏆🥉🟣🟢🟠🔵] /,'').split(' —')[0];
+    phase.partidos.forEach(m => {
+      const localResolved = resolveTeamForSlot(m.local, null) || m.local;
+      const visitanteResolved = resolveTeamForSlot(m.visitante, null) || m.visitante;
+      const res = (cache.resultados.elim || {})[m.code];
+      const isPlayed = !!res;
+      const resultText = isPlayed ? `✓ ${res}` : '';
+      allMatches.push({ ...m, local: localResolved, visitante: visitanteResolved, stage: shortName, key: m.code, isPlayed, resultText, isElim: true });
     });
   });
 
-  // Sort chronologically and take first 4
-  upcoming.sort((a, b) => a.ts - b.ts);
-  const matches = upcoming.slice(0, 4);
-
-  if (!matches.length) {
-    c.innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px">No hay partidos próximos en fase de grupos.</div>';
-    return;
+  // Extract unique dates (only the day and month, like "11 jun")
+  const uniqueDates = [...new Set(allMatches.map(m => {
+    const parts = m.fecha.split(' ');
+    return parts[0] + ' ' + parts[1].toLowerCase();
+  }))];
+  
+  // Sort them chronologically
+  uniqueDates.sort((a,b) => {
+    const parseDate = (d) => {
+      const parts = d.split(' ');
+      const day = parseInt(parts[0]);
+      const month = parts[1].startsWith('jun') ? 5 : 6;
+      return new Date(2026, month, day).getTime();
+    };
+    return parseDate(a) - parseDate(b);
+  });
+  
+  if (!currentCalendarDate) {
+    const today = new Date();
+    const todayStr = `${today.getDate()} ${today.getMonth() === 5 ? 'jun' : 'jul'}`;
+    if (uniqueDates.includes(todayStr)) {
+      currentCalendarDate = todayStr;
+    } else {
+      currentCalendarDate = uniqueDates[0];
+    }
   }
-
-  c.innerHTML = matches.map(m => {
-    return `<div class="match-row"><div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora}</div><div style="font-size:10px;color:var(--text3)">Grupo ${m.grupo}</div></div><div class="team-block"><div class="team-name-match">${getFlagHtml(m.local)}${m.local}</div></div><div class="score-center"><div class="score-vs">VS</div><div class="sede">${m.sede}</div></div><div class="team-block right"><div class="team-name-match">${getFlagHtml(m.visitante)}${m.visitante}</div></div><div class="pred-block" style="justify-content:center"><button class="btn btn-sm" style="width:100%" onclick="goto('grupos-pred')">Ir a pronósticos</button></div></div>`;
-  }).join('');
+  
+  if (dateStr) currentCalendarDate = dateStr;
+  
+  // Build Nav
+  let html = '<div class="calendar-nav">';
+  uniqueDates.forEach(d => {
+    const act = d === currentCalendarDate ? ' active' : '';
+    html += `<div class="calendar-day-pill${act}" onclick="renderCalendar('${d}')">${d}</div>`;
+  });
+  html += '</div>';
+  
+  // Build matches for selected date
+  html += '<div class="calendar-matches">';
+  const dayMatches = allMatches.filter(m => m.fecha.toLowerCase().startsWith(currentCalendarDate));
+  
+  // Sort by time
+  dayMatches.sort((a,b) => {
+    const ah = parseInt(a.hora.replace('*','').split(':')[0]);
+    const am = parseInt(a.hora.replace('*','').split(':')[1]);
+    const bh = parseInt(b.hora.replace('*','').split(':')[0]);
+    const bm = parseInt(b.hora.replace('*','').split(':')[1]);
+    return (ah*60+am) - (bh*60+bm);
+  });
+  
+  if (!dayMatches.length) {
+    html += '<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px">No hay partidos este día.</div>';
+  } else {
+    dayMatches.forEach(m => {
+      let resHtml = '';
+      if (m.isPlayed) {
+        resHtml = `<div class="cal-match-result ${m.isElim ? 'elim' : ''}">${m.resultText}</div>`;
+      } else {
+        resHtml = `<div style="font-size:12px;color:var(--text3);font-weight:700">VS</div>`;
+      }
+      
+      const localFlag = ALL_TEAMS.includes(m.local) ? getFlagHtml(m.local) : '';
+      const visitanteFlag = ALL_TEAMS.includes(m.visitante) ? getFlagHtml(m.visitante) : '';
+      
+      html += `
+        <div class="cal-match-row">
+          <div class="cal-match-info">
+            <div class="cal-match-time">${m.stage} · ${m.hora}</div>
+            <div class="cal-match-teams">
+              <span>${localFlag}${m.local}</span> 
+              <span style="color:var(--text3);font-size:10px;margin:0 4px">—</span> 
+              <span>${visitanteFlag}${m.visitante}</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px">${m.sede}</div>
+          </div>
+          ${resHtml}
+        </div>
+      `;
+    });
+  }
+  html += '</div>';
+  
+  c.innerHTML = html;
+  
+  // Auto-scroll the nav to the active pill
+  setTimeout(() => {
+    const nav = document.querySelector('.calendar-nav');
+    const activePill = nav?.querySelector('.active');
+    if (nav && activePill) {
+      activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, 50);
 }
 
 // ===================== RANKING =====================

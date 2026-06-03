@@ -461,6 +461,39 @@ td.pts-col { color: var(--accent3); font-weight: 700; font-family: 'Outfit', san
 .pred-timestamp { font-size: 10px; color: var(--text3); margin-top: 4px; }
 .pred-timestamp.empty { display: none; }
 
+/* ── CALENDARIO ── */
+.calendar-nav {
+  display: flex; gap: 8px; overflow-x: auto;
+  padding-bottom: 12px; margin-bottom: 16px;
+  scrollbar-width: none; /* Firefox */
+}
+.calendar-nav::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
+.calendar-day-pill {
+  background: var(--s2); border: 1px solid var(--border2);
+  color: var(--text2); font-weight: 600; font-size: 13px;
+  padding: 8px 16px; border-radius: 20px;
+  cursor: pointer; white-space: nowrap; transition: all .15s;
+}
+.calendar-day-pill:hover { background: var(--s3); color: var(--text); }
+.calendar-day-pill.active {
+  background: rgba(123,44,191,0.15); border-color: rgba(123,44,191,0.4);
+  color: var(--accent3); font-weight: 700;
+}
+.cal-match-row {
+  background: var(--s2); border: 1px solid var(--border2);
+  border-radius: var(--r-lg); padding: 12px 16px; margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cal-match-info { flex: 1; min-width: 0; }
+.cal-match-time { font-size: 11px; color: var(--text3); font-weight: 700; margin-bottom: 4px; }
+.cal-match-teams { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.cal-match-teams span { display: inline-flex; align-items: center; gap: 6px; }
+.cal-match-result {
+  background: rgba(255,255,255,0.05); padding: 6px 12px;
+  border-radius: var(--r); font-family: 'Outfit', sans-serif;
+  font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: 1px;
+}
+.cal-match-result.elim { font-size: 13px; font-weight: 700; color: var(--accent3); background: rgba(123,44,191,0.1); }
 /* ── ELIMINATORIAS ── */
 .bracket-phase { margin-bottom: 24px; }
 .bracket-phase-title {
