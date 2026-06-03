@@ -115,6 +115,12 @@
           </div>
           <input type="file" id="setup-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarFile(this,'setup')">
         </div>
+        <div class="form-group">
+          <label class="form-label">Selección a la que apoyas</label>
+          <select class="form-input" id="setup-equipo">
+            <option value="">— Elige un país —</option>
+          </select>
+        </div>
         <div class="admin-badge-preview" id="step-2-badge">👑 Serás el administrador</div>
         <div style="display:flex;gap:10px;margin-top:20px">
           <button class="btn" onclick="backToStep1()">← Atrás</button>
@@ -143,8 +149,7 @@
     <button class="nav-item" onclick="goto('participantes')"><span class="icon">👥</span> Participantes</button>
 
     <div class="nav-section">Predicciones</div>
-    <button class="nav-item" onclick="goto('grupos-pred')"><span class="icon">📋</span> Partidos <span class="nav-count">72</span></button>
-    <button class="nav-item" onclick="goto('eliminatorias-pred')"><span class="icon">⚡</span> Eliminatorias <span class="nav-count">32</span></button>
+    <button class="nav-item" onclick="goto('grupos-pred')"><span class="icon">📋</span> Partidos <span class="nav-count">104</span></button>
     <button class="nav-item" onclick="goto('especiales')"><span class="icon">🌟</span> Especiales</button>
 
     <div class="nav-section">Torneo</div>
@@ -220,6 +225,10 @@
           </div>
         </div>
 
+        <div class="section-title">🌍 Selecciones Apoyadas</div>
+        <div id="dash-supported-teams" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:12px; margin-bottom:24px; scrollbar-width:none;">
+          <div style="color:var(--text3);font-size:12px;">Cargando...</div>
+        </div>
 
         <div class="section-title">📅 Próximos partidos</div>
         <div id="next-matches-list"></div>
@@ -258,7 +267,7 @@
       </div>
     </div>
 
-    <!-- GRUPOS PRED -->
+    <!-- PARTIDOS (Grupos + Eliminatorias) -->
     <div id="page-grupos-pred" class="page">
       <div class="topbar">
         <div class="topbar-title">📋 Predicciones — Partidos</div>
@@ -270,16 +279,17 @@
           <div id="pred-user-selector"></div>
         </div>
       </div>
-      <div style="padding:24px" id="grupos-pred-content"></div>
-    </div>
-
-    <!-- ELIM PRED -->
-    <div id="page-eliminatorias-pred" class="page">
-      <div class="topbar">
-        <div class="topbar-title">⚡ Predicciones — Eliminatorias</div>
-        <div id="pred-user-selector-elim"></div>
+      <div style="padding:24px">
+        <div id="grupos-pred-content"></div>
+        
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border2);">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px;">
+            <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:700;color:var(--text)">⚡ Eliminatorias</div>
+            <div id="pred-user-selector-elim"></div>
+          </div>
+          <div id="elim-pred-content"></div>
+        </div>
       </div>
-      <div style="padding:24px" id="elim-pred-content"></div>
     </div>
 
     <!-- ESPECIALES -->
@@ -504,6 +514,12 @@
       </div>
       <input type="file" id="add-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarFile(this,'add')">
     </div>
+    <div class="form-group">
+      <label class="form-label">Selección a la que apoya</label>
+      <select class="form-input" id="add-equipo">
+        <option value="">— Elige un país —</option>
+      </select>
+    </div>
     <button class="btn btn-accent btn-full" onclick="addParticipant()">Añadir participante</button>
   </div>
 </div>
@@ -548,9 +564,9 @@
     <span class="bn-icon">📋</span>
     <span class="bn-label">Partidos</span>
   </button>
-  <button class="bn-item" id="bn-eliminatorias-pred" onclick="goto('eliminatorias-pred')">
-    <span class="bn-icon">⚡</span>
-    <span class="bn-label">Elim.</span>
+  <button class="bn-item" id="bn-especiales" onclick="goto('especiales')">
+    <span class="bn-icon">🌟</span>
+    <span class="bn-label">Especiales</span>
   </button>
   <button class="bn-item" id="bn-more" onclick="toggleMobileMenu()">
     <span class="bn-icon">☰</span>

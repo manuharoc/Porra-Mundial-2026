@@ -338,6 +338,16 @@ async function setupFinish(){
     session = { liga_id, participante_id:partId };
   }
 
+  const equipoApoyado = document.getElementById('setup-equipo').value;
+  if (equipoApoyado) {
+    await sb.from('predicciones_especiales').upsert({
+      participante_id: session.participante_id,
+      tipo: 'equipo_apoyado',
+      valor: equipoApoyado,
+      registrado_at: new Date().toISOString()
+    }, { onConflict: 'participante_id,tipo' });
+  }
+
   currentViewUser = session.participante_id;
   await loadAllData();
   saveCurrentToMultiSession();
@@ -524,7 +534,7 @@ function goto(page){
 function renderPage(page){
   const map = {
     dashboard:renderDashboard, ranking:renderRanking, participantes:renderParticipants,
-    'grupos-pred':renderGruposPred, 'eliminatorias-pred':renderElimPred, especiales:renderEspeciales,
+    'grupos-pred': () => { renderGruposPred(); renderElimPred(); }, especiales:renderEspeciales,
     'grupos-torneo':renderGruposTorneo, normas:renderNormas, config:renderConfig
   };
   if(map[page]) map[page]();
@@ -643,6 +653,30 @@ function renderDashboard(){
   document.getElementById('dash-participantes').textContent = cache.participantes.length;
   applySidebarProfile();
   renderNextMatches();
+
+  const supportedTeamsEl = document.getElementById('dash-supported-teams');
+  if (supportedTeamsEl) {
+    if (!cache.participantes.length) {
+      supportedTeamsEl.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;width:100%">Ninguno todavía.</div>';
+    } else {
+      let stHtml = '';
+      cache.participantes.forEach(p => {
+        const equipoApoyado = ((cache.predicciones[p.id]||{}).especiales||{}).equipo_apoyado;
+        if (equipoApoyado) {
+          stHtml += `
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; width:56px;">
+              ${renderAvatarHtml(p, 'md')}
+              <div style="font-size:10px; color:var(--text); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${p.name}</div>
+              <div style="font-size:16px;" title="${equipoApoyado}">${getFlagHtml(equipoApoyado)}</div>
+            </div>
+          `;
+        }
+      });
+      if (!stHtml) stHtml = '<div style="color:var(--text3);font-size:12px;text-align:center;width:100%">Aún no hay equipos apoyados.</div>';
+      supportedTeamsEl.innerHTML = stHtml;
+    }
+  }
+
 
   const leaderboardEl = document.getElementById('dash-leaderboard');
   if (leaderboardEl) {
@@ -773,6 +807,17 @@ async function addParticipant(){
     liga_id:session.liga_id, nombre:name, emoji, avatar_bg:c[0], avatar_color:c[1], is_admin:false
   }).select().single();
   if(error){ showToast('❌ Error: '+(error.message||'Error desconocido')); return; }
+
+  const equipoApoyado = document.getElementById('add-equipo').value;
+  if (equipoApoyado) {
+    await sb.from('predicciones_especiales').insert({
+      participante_id: data.id,
+      tipo: 'equipo_apoyado',
+      valor: equipoApoyado,
+      registrado_at: new Date().toISOString()
+    });
+  }
+
   cache.participantes.push(fromSbPart(data));
   delete _pendingPhoto['add'];
   closeModal('modal-add');
@@ -1048,7 +1093,7 @@ async function savePredGrupo(key){
 
 function toggleFilledMatches() {
   const isHidden = document.getElementById('hide-filled-matches').checked;
-  const rows = document.querySelectorAll('.match-row.has-pred');
+  const rows = document.querySelectorAll('.match-row.has-pred, .elim-row.has-pred');
   rows.forEach(r => r.style.display = isHidden ? 'none' : '');
 }
 
@@ -1485,7 +1530,7 @@ function renderElimPred(){
       const vsText = res ? `<span class="sa-result-tag">✓ ${res}</span>` : 'VS';
 
       html+=`
-        <div class="elim-row">
+        <div class="elim-row ${predVal ? 'has-pred' : ''}">
           <div class="match-code">${m.code}<br><span style="font-size:10px;color:var(--text3)">${m.fecha}</span></div>
           ${localHtml}
           <input type="number" min="0" placeholder="-" id="gl-${m.code}" class="elim-score-inp" value="${predGl}" oninput="handleElimGoalsChange('${m.code}')"${disStr}>
@@ -2025,6 +2070,12 @@ async function saveGlobalPichichi(){
 async function initApp(){
   showLoading(true);
   setLoadingText('Conectando con Supabase…');
+
+  const teamOpts = '<option value="">— Elige un país —</option>' + ALL_TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+  const setupEq = document.getElementById('setup-equipo');
+  const addEq = document.getElementById('add-equipo');
+  if (setupEq) setupEq.innerHTML = teamOpts;
+  if (addEq) addEq.innerHTML = teamOpts;
 
   const oldSession = localStorage.getItem(SESSION_KEY);
   const multiStr = localStorage.getItem(MULTI_SESSION_KEY);
