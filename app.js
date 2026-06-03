@@ -1416,50 +1416,21 @@ function updateWinnerDropdown(code) {
   }
 }
 
-function handleElimGoalsChange(code) {
-  const glEl = document.getElementById('gl-' + code);
-  const gvEl = document.getElementById('gv-' + code);
-  const winnerEl = document.getElementById('winner-' + code);
-  if (!glEl || !gvEl || !winnerEl) return;
-
-  const glVal = glEl.value;
-  const gvVal = gvEl.value;
-  if (glVal !== '' && gvVal !== '') {
-    const gl = parseInt(glVal);
-    const gv = parseInt(gvVal);
-    const localEl = document.getElementById('local-' + code);
-    const visitanteEl = document.getElementById('visitante-' + code);
-    const localVal = localEl ? (localEl.value || localEl.textContent || '').trim() : '';
-    const visitanteVal = visitanteEl ? (visitanteEl.value || visitanteEl.textContent || '').trim() : '';
-
-    if (gl > gv && localVal && ALL_TEAMS.includes(localVal)) {
-      winnerEl.value = localVal;
-    } else if (gl < gv && visitanteVal && ALL_TEAMS.includes(visitanteVal)) {
-      winnerEl.value = visitanteVal;
-    }
-  }
-  saveElimPredRow(code);
-}
-
 async function saveElimPredRow(code) {
   const uid = currentViewUser;
   if (!uid) { showToast('Selecciona un participante primero'); return; }
 
   const localEl = document.getElementById('local-' + code);
   const visitanteEl = document.getElementById('visitante-' + code);
-  const glEl = document.getElementById('gl-' + code);
-  const gvEl = document.getElementById('gv-' + code);
   const winnerEl = document.getElementById('winner-' + code);
 
   const local = localEl ? (localEl.value || localEl.textContent || '').trim() : '';
   const visitante = visitanteEl ? (visitanteEl.value || visitanteEl.textContent || '').trim() : '';
-  const gl = glEl && glEl.value !== '' ? parseInt(glEl.value) : null;
-  const gv = gvEl && gvEl.value !== '' ? parseInt(gvEl.value) : null;
   const ganador = winnerEl ? winnerEl.value : '';
 
   if (!cache.predicciones[uid]) cache.predicciones[uid] = { grupos:{}, elim:{}, especiales:{}, especialesTs:{} };
 
-  const data = { local, visitante, goles_local: gl, goles_visitante: gv, ganador };
+  const data = { local, visitante, ganador };
   const jsonStr = JSON.stringify(data);
   cache.predicciones[uid].elim[code] = jsonStr;
 
@@ -1473,17 +1444,63 @@ async function saveElimPredRow(code) {
     showToast('❌ Error al guardar');
   } else {
     showToast('✅ Guardado');
-    renderElimPred();
+    if (typeof currentElimView !== 'undefined' && currentElimView === 'bracket') {
+      renderElimBracketView();
+    } else {
+      renderElimListView();
+    }
   }
 }
 
 // ===================== PRED ELIM =====================
+let currentElimView = 'list';
+
 function renderElimPred(){
   const c=document.getElementById('elim-pred-content');
   if(!c) return;
-  document.getElementById('pred-user-selector-elim').innerHTML=renderUserSelector('switchPredUserElim');
-  if(!cache.participantes.length){ c.innerHTML='<div class="empty-state"><div class="ei">👥</div><p>Añade participantes primero.</p></div>'; return; }
   
+  let headerHtml = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+      <div id="pred-user-selector-elim"></div>
+      <div class="view-toggle" style="display:flex; gap:8px;">
+        <button id="btn-view-list" class="btn btn-sm ${currentElimView === 'list' ? 'btn-accent' : ''}" onclick="toggleElimView('list')">Vista Lista</button>
+        <button id="btn-view-bracket" class="btn btn-sm ${currentElimView === 'bracket' ? 'btn-accent' : ''}" onclick="toggleElimView('bracket')">Vista Cuadro</button>
+      </div>
+    </div>
+    <div id="elim-view-container"></div>
+  `;
+  c.innerHTML = headerHtml;
+  document.getElementById('pred-user-selector-elim').innerHTML=renderUserSelector('switchPredUserElim');
+  
+  if(!cache.participantes.length){ 
+    document.getElementById('elim-view-container').innerHTML='<div class="empty-state"><div class="ei">👥</div><p>Añade participantes primero.</p></div>'; 
+    return; 
+  }
+
+  if (currentElimView === 'bracket') {
+    renderElimBracketView();
+  } else {
+    renderElimListView();
+  }
+}
+
+function toggleElimView(view) {
+  currentElimView = view;
+  const bl = document.getElementById('btn-view-list');
+  const bb = document.getElementById('btn-view-bracket');
+  if(bl) bl.className = view === 'list' ? 'btn btn-sm btn-accent' : 'btn btn-sm';
+  if(bb) bb.className = view === 'bracket' ? 'btn btn-sm btn-accent' : 'btn btn-sm';
+  
+  if (view === 'list') {
+    renderElimListView();
+  } else {
+    renderElimBracketView();
+  }
+}
+
+function renderElimListView() {
+  const container = document.getElementById('elim-view-container');
+  if (!container) return;
   const uid=currentViewUser;
   const isMe = uid === getMyId();
   const disStr = isMe ? '' : ' disabled';
@@ -1493,68 +1510,17 @@ function renderElimPred(){
     html+=`<div class="bracket-phase"><div class="bracket-phase-title">${phase.name}</div>`;
     phase.partidos.forEach(m=>{
       const predVal = uid ? (((cache.predicciones[uid]||{}).elim||{})[m.code]) : null;
-      let predLocal = '';
-      let predVisitante = '';
-      let predGl = '';
-      let predGv = '';
       let predWinner = '';
-
       if (predVal) {
         if (predVal.startsWith('{')) {
-          try {
-            const parsed = JSON.parse(predVal);
-            predLocal = parsed.local || '';
-            predVisitante = parsed.visitante || '';
-            predGl = parsed.goles_local !== undefined && parsed.goles_local !== null ? parsed.goles_local : '';
-            predGv = parsed.goles_visitante !== undefined && parsed.goles_visitante !== null ? parsed.goles_visitante : '';
-            predWinner = parsed.ganador || '';
-          } catch(e) {
-            predWinner = predVal;
-          }
+          try { predWinner = JSON.parse(predVal).ganador || ''; } catch(e) { predWinner = predVal; }
         } else {
           predWinner = predVal;
         }
       }
 
-      const resolvedLocalDefault = resolveTeamForSlot(m.local, uid);
-      const resolvedVisitanteDefault = resolveTeamForSlot(m.visitante, uid);
-
-      const displayLocal = predLocal || resolvedLocalDefault;
-      const displayVisitante = predVisitante || resolvedVisitanteDefault;
-
-      const isLocalSelect = false;
-      const isVisitanteSelect = false;
-
-      const possibleLocals = getPossibleTeamsForSlot(m.local);
-      const possibleVisitantes = getPossibleTeamsForSlot(m.visitante);
-
-      let localHtml = '';
-      if (isLocalSelect) {
-        localHtml = `
-          <select id="local-${m.code}" class="winner-select" style="font-weight:700" onchange="updateWinnerDropdown('${m.code}'); saveElimPredRow('${m.code}');"${disStr}>
-            <option value="">— ${m.local} —</option>
-            ${possibleLocals.map(t => `<option value="${t}" ${displayLocal === t ? 'selected' : ''}>${t}</option>`).join('')}
-          </select>
-        `;
-      } else {
-        localHtml = `
-          <div id="local-${m.code}" class="elim-team-label" style="font-weight:700">${getFlagHtml(displayLocal)}${displayLocal}</div>
-        `;
-      }
-
-      let visitanteHtml = '';
-      if (isVisitanteSelect) {
-        visitanteHtml = `
-          <select id="visitante-${m.code}" class="winner-select" style="font-weight:700; text-align:right" onchange="updateWinnerDropdown('${m.code}'); saveElimPredRow('${m.code}');"${disStr}>
-            <option value="">— ${m.visitante} —</option>
-            ${possibleVisitantes.map(t => `<option value="${t}" ${displayVisitante === t ? 'selected' : ''}>${t}</option>`).join('')}
-          </select>
-        `;
-      } else {
-        visitanteHtml = `
-          <div id="visitante-${m.code}" class="elim-team-label" style="font-weight:700; text-align:right">${getFlagHtml(displayVisitante)}${displayVisitante}</div>
-        `;
-      }
+      const displayLocal = resolveTeamForSlot(m.local, uid);
+      const displayVisitante = resolveTeamForSlot(m.visitante, uid);
 
       const res=(cache.resultados.elim||{})[m.code];
       const vsText = res ? `<span class="sa-result-tag">✓ ${res}</span>` : 'VS';
@@ -1562,11 +1528,9 @@ function renderElimPred(){
       html+=`
         <div class="elim-row">
           <div class="match-code">${m.code}<br><span style="font-size:10px;color:var(--text3)">${m.fecha}</span></div>
-          ${localHtml}
-          <input type="number" min="0" placeholder="-" id="gl-${m.code}" class="elim-score-inp" value="${predGl}" oninput="handleElimGoalsChange('${m.code}')"${disStr}>
+          <div id="local-${m.code}" class="elim-team-label" style="font-weight:700">${getFlagHtml(displayLocal)}${displayLocal}</div>
           <div class="elim-vs">${vsText}</div>
-          <input type="number" min="0" placeholder="-" id="gv-${m.code}" class="elim-score-inp" value="${predGv}" oninput="handleElimGoalsChange('${m.code}')"${disStr}>
-          ${visitanteHtml}
+          <div id="visitante-${m.code}" class="elim-team-label" style="font-weight:700; text-align:right">${getFlagHtml(displayVisitante)}${displayVisitante}</div>
           <div class="elim-winner-block">
             <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" onchange="saveElimPredRow('${m.code}')"${disStr}>
               <option value="">— Ganador —</option>
@@ -1579,7 +1543,66 @@ function renderElimPred(){
     });
     html+='</div>';
   });
-  c.innerHTML=html;
+  container.innerHTML=html;
+}
+
+function renderElimBracketView() {
+  const container = document.getElementById('elim-view-container');
+  if (!container) return;
+  const uid=currentViewUser;
+  const isMe = uid === getMyId();
+  const disStr = isMe ? '' : ' disabled';
+
+  let html = '<div class="bracket-wrapper"><div class="bracket-layout">';
+  
+  ELIM_PHASES.forEach(phase => {
+    if (phase.name.includes('Tercer Puesto')) return; // Skip 3rd place in standard bracket view
+    
+    // Shorten phase names
+    let shortName = phase.name.replace(/^[🏆🥉🟣🟢🟠🔵] /,'').split(' —')[0];
+    
+    html += `<div class="bracket-column">`;
+    html += `<div class="bracket-col-title">${shortName}</div>`;
+    
+    phase.partidos.forEach(m => {
+      const predVal = uid ? (((cache.predicciones[uid]||{}).elim||{})[m.code]) : null;
+      let predWinner = '';
+      if (predVal) {
+        if (predVal.startsWith('{')) {
+          try { predWinner = JSON.parse(predVal).ganador || ''; } catch(e) { predWinner = predVal; }
+        } else {
+          predWinner = predVal;
+        }
+      }
+
+      const displayLocal = resolveTeamForSlot(m.local, uid);
+      const displayVisitante = resolveTeamForSlot(m.visitante, uid);
+
+      html += `
+        <div class="bracket-match">
+          <div class="bm-code">${m.code} <span style="font-size:9px;color:var(--text3);margin-left:4px">${m.fecha}</span></div>
+          <div class="bm-team ${predWinner === displayLocal && predWinner ? 'winner' : ''}">${getFlagHtml(displayLocal)} ${displayLocal || '—'}</div>
+          <div class="bm-team ${predWinner === displayVisitante && predWinner ? 'winner' : ''}">${getFlagHtml(displayVisitante)} ${displayVisitante || '—'}</div>
+          <div style="margin-top:6px; display:none;">
+            <input type="hidden" id="local-${m.code}" value="${displayLocal}">
+            <input type="hidden" id="visitante-${m.code}" value="${displayVisitante}">
+          </div>
+          <div style="margin-top:6px">
+            <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" style="width:100%; font-size:12px; padding:4px;" onchange="saveElimPredRow('${m.code}')"${disStr}>
+              <option value="">— Seleccionar —</option>
+              ${displayLocal && ALL_TEAMS.includes(displayLocal) ? `<option value="${displayLocal}" ${predWinner === displayLocal ? 'selected' : ''}>${displayLocal}</option>` : ''}
+              ${displayVisitante && ALL_TEAMS.includes(displayVisitante) ? `<option value="${displayVisitante}" ${predWinner === displayVisitante ? 'selected' : ''}>${displayVisitante}</option>` : ''}
+            </select>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += `</div>`; // End column
+  });
+  
+  html += '</div></div>';
+  container.innerHTML = html;
 }
 
 // ===================== ESPECIALES =====================
