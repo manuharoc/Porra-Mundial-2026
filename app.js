@@ -101,6 +101,10 @@ async function handleAvatarFile(input, ctx){
 
 // ===================== LOAD FROM SUPABASE =====================
 async function loadAllData(){
+  if(cache.participantes && cache.participantes.length > 0){
+    const oldScores = cache.participantes.map(p=>({...p,...calcScore(p.id)})).sort((a,b)=>b.total-a.total);
+    window.previousRankingData = oldScores.map((p,i)=>({id:p.id, pos:i+1}));
+  }
   const { liga_id } = session;
   setLoadingText('Cargando datos…');
 
@@ -698,6 +702,108 @@ function renderDashboard(){
       }).join('');
     }
   }
+  renderInsights();
+}
+
+function parseMatchTime(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return 0;
+  const parts = dateStr.split(' ');
+  const day = parseInt(parts[0]);
+  const month = parts[1].startsWith('jun') ? 5 : 6;
+  let tStr = timeStr.replace('*', '');
+  let tParts = tStr.split(':');
+  let h = parseInt(tParts[0]);
+  let m = parseInt(tParts[1]);
+  return new Date(2026, month, day, h, m, 0).getTime();
+}
+
+function renderInsights() {
+  const container = document.getElementById('dash-insights');
+  if(!container) return;
+
+  if(!cache.participantes.length) {
+    container.innerHTML = '<div class="stat-card" style="grid-column: 1 / -1;"><div class="stat-label" style="text-align:center;">Esperando participantes...</div></div>';
+    return;
+  }
+
+  const campeones = {};
+  let totalCampeon = 0;
+  Object.values(cache.predicciones).forEach(p => {
+    if(p.especiales && p.especiales.campeon) {
+      campeones[p.especiales.campeon] = (campeones[p.especiales.campeon] || 0) + 1;
+      totalCampeon++;
+    }
+  });
+  
+  let favMundialHtml = '<div class="stat-sub">Sin datos aún</div>';
+  if (totalCampeon > 0) {
+    const sorted = Object.entries(campeones).sort((a,b)=>b[1]-a[1]);
+    const top = sorted[0];
+    const pct = Math.round((top[1] / totalCampeon) * 100);
+    favMundialHtml = `<div class="stat-val" style="font-size:18px">${top[0]}</div><div class="stat-sub">${pct}% de los votos</div>`;
+  }
+
+  const now = new Date().getTime();
+  let nextMatch = null;
+  
+  for(const g of GRUPOS) {
+    for(const m of g.partidos) {
+      const key = `G${g.id}_${m.n}`;
+      const res = (cache.resultados.grupos || {})[key];
+      if (!res || res.gl === '' || res.gl === undefined) {
+        const mTime = parseMatchTime(m.fecha, m.hora);
+        if(!nextMatch || mTime < nextMatch.time) {
+          nextMatch = { ...m, key, time: mTime, type: 'grupo' };
+        }
+      }
+    }
+  }
+
+  let nextMatchHtml = '<div class="stat-sub">Sin partidos próximos</div>';
+  if (nextMatch) {
+    let localW = 0, draw = 0, visitW = 0, totalP = 0;
+    Object.values(cache.predicciones).forEach(p => {
+      if(p.grupos && p.grupos[nextMatch.key]) {
+        const pred = p.grupos[nextMatch.key];
+        if(pred.gl !== '' && pred.gv !== '' && pred.gl !== undefined) {
+          totalP++;
+          if (parseInt(pred.gl) > parseInt(pred.gv)) localW++;
+          else if (parseInt(pred.gl) < parseInt(pred.gv)) visitW++;
+          else draw++;
+        }
+      }
+    });
+
+    if (totalP > 0) {
+      const pL = Math.round((localW/totalP)*100);
+      const pE = Math.round((draw/totalP)*100);
+      const pV = Math.round((visitW/totalP)*100);
+      nextMatchHtml = `
+        <div class="stat-val" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nextMatch.local} vs ${nextMatch.visitante}</div>
+        <div class="stat-sub" style="margin-top:4px;">
+          <div style="display:flex;height:6px;width:100%;background:var(--s4);border-radius:3px;overflow:hidden;margin-bottom:4px;">
+            <div style="width:${pL}%;background:var(--green)"></div>
+            <div style="width:${pE}%;background:var(--text3)"></div>
+            <div style="width:${pV}%;background:var(--red)"></div>
+          </div>
+          <span style="color:var(--green)">${pL}%</span> - <span style="color:var(--text3)">${pE}%</span> - <span style="color:var(--red)">${pV}%</span>
+        </div>
+      `;
+    } else {
+      nextMatchHtml = `<div class="stat-val" style="font-size:14px">${nextMatch.local} vs ${nextMatch.visitante}</div><div class="stat-sub">Nadie ha predicho aún</div>`;
+    }
+  }
+
+  container.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">🏆 Favorito de la Liga</div>
+      ${favMundialHtml}
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">🔜 Próximo Partido</div>
+      ${nextMatchHtml}
+    </div>
+  `;
 }
 
 let currentCalendarDate = null;
@@ -846,7 +952,16 @@ function renderRanking(){
     const pos=i+1, bc=pos===1?'pos-1':pos===2?'pos-2':pos===3?'pos-3':'pos-n';
     const youMark=p.id===getMyId()?'<span class="you-badge">yo</span>':'';
     const adminMark=p.isAdmin?'<span class="admin-tag">👑</span>':'';
-    return `<tr><td><span class="pos-badge ${bc}">${pos}</span></td><td class="name-col">${p.name}${youMark}${adminMark}</td><td class="pts-col">${p.grupos}</td><td>${p.r32}</td><td>${p.octavos}</td><td>${p.cuartos}</td><td>${p.semis}</td><td>${p.final}</td><td style="color:var(--accent2)">${p.campeon}</td><td>${p.sub}</td><td class="pts-col" style="font-size:18px">${p.total}</td></tr>`;
+    let trendHtml = '';
+    if (window.previousRankingData) {
+      const old = window.previousRankingData.find(x => x.id === p.id);
+      if (old) {
+        if (old.pos > pos) trendHtml = `<span style="color:var(--green);font-size:12px;margin-left:4px;display:inline-block;animation:pop 0.3s ease;">⬆️${old.pos - pos}</span>`;
+        else if (old.pos < pos) trendHtml = `<span style="color:var(--red);font-size:12px;margin-left:4px;display:inline-block;animation:pop 0.3s ease;">⬇️${pos - old.pos}</span>`;
+        else trendHtml = `<span style="color:var(--text3);font-size:12px;margin-left:4px;">-</span>`;
+      }
+    }
+    return `<tr><td><span class="pos-badge ${bc}">${pos}</span>${trendHtml}</td><td class="name-col">${p.name}${youMark}${adminMark}</td><td class="pts-col">${p.grupos}</td><td>${p.r32}</td><td>${p.octavos}</td><td>${p.cuartos}</td><td>${p.semis}</td><td>${p.final}</td><td style="color:var(--accent2)">${p.campeon}</td><td>${p.sub}</td><td class="pts-col" style="font-size:18px">${p.total}</td></tr>`;
   }).join('');
 
   // ---- Móvil cards ----
@@ -861,8 +976,17 @@ function renderRanking(){
     const adminMark = p.isAdmin ? '👑 ' : '';
     const esp = ((cache.predicciones[p.id]||{}).especiales)||{};
     const champStr = esp.campeon ? `🏆 ${esp.campeon}` : '';
+    let trendHtml = '';
+    if (window.previousRankingData) {
+      const old = window.previousRankingData.find(x => x.id === p.id);
+      if (old) {
+        if (old.pos > pos) trendHtml = `<div style="color:var(--green);font-size:10px;text-align:center;margin-top:2px;animation:pop 0.3s ease;">⬆️${old.pos - pos}</div>`;
+        else if (old.pos < pos) trendHtml = `<div style="color:var(--red);font-size:10px;text-align:center;margin-top:2px;animation:pop 0.3s ease;">⬇️${pos - old.pos}</div>`;
+        else trendHtml = `<div style="color:var(--text3);font-size:10px;text-align:center;margin-top:2px;">-</div>`;
+      }
+    }
     return `<div class="ranking-card ${topClass}">
-      <div class="rc-pos">${posLabel}</div>
+      <div class="rc-pos" style="display:flex;flex-direction:column;justify-content:center;">${posLabel}${trendHtml}</div>
       <div class="rc-info">
         <div class="rc-name">${adminMark}${p.name}${youMark}</div>
         <div class="rc-detail">Grupos: <b>${p.grupos}</b> · Elim: <b>${p.r32+p.octavos+p.cuartos+p.semis+p.final}</b> · Esp: <b>${p.campeon+p.sub}</b>${champStr?' · '+champStr:''}</div>
@@ -2058,6 +2182,17 @@ function renderConfig(){
   const modeSel = document.getElementById('config-game-mode');
   if(modeSel) modeSel.value = cache.configModo || 'interactivo';
 
+  const notifStatus = document.getElementById('notif-status');
+  if (notifStatus && "Notification" in window) {
+    if (Notification.permission === "granted") {
+      notifStatus.textContent = "✅ Notificaciones activadas.";
+      notifStatus.style.color = "var(--green)";
+    } else if (Notification.permission === "denied") {
+      notifStatus.textContent = "❌ Notificaciones denegadas por el navegador.";
+      notifStatus.style.color = "var(--red)";
+    }
+  }
+
   // Generate QR Code
   const qrContainer = document.getElementById('qrcode-container');
   if(qrContainer && cache.liga?.codigo) {
@@ -2467,4 +2602,61 @@ async function forceAppUpdate() {
     console.error('Error clearing cache:', err);
     window.location.reload(true);
   }
+}
+
+// ===================== NOTIFICACIONES =====================
+function requestLocalNotifications() {
+  if (!("Notification" in window)) {
+    showToast("Este navegador no soporta notificaciones de escritorio.");
+    return;
+  }
+  Notification.requestPermission().then(permission => {
+    const statusEl = document.getElementById('notif-status');
+    if (permission === "granted") {
+      if(statusEl) { statusEl.textContent = "✅ Notificaciones activadas."; statusEl.style.color = "var(--green)"; }
+      startNotificationChecker();
+    } else {
+      if(statusEl) { statusEl.textContent = "❌ Notificaciones denegadas."; statusEl.style.color = "var(--red)"; }
+    }
+  });
+}
+
+function startNotificationChecker() {
+  if (window.notifInterval) clearInterval(window.notifInterval);
+  window.notifInterval = setInterval(checkUpcomingMatchesForNotifs, 60000);
+  checkUpcomingMatchesForNotifs();
+}
+
+function checkUpcomingMatchesForNotifs() {
+  if (Notification.permission !== "granted") return;
+  const now = new Date().getTime();
+  const uid = getMyId();
+  if (!uid) return;
+  
+  if (!window.notifiedMatches) window.notifiedMatches = new Set();
+  
+  for(const g of GRUPOS) {
+    for(const m of g.partidos) {
+      if (window.notifiedMatches.has(m.n)) continue;
+      
+      const key = `G${g.id}_${m.n}`;
+      const mTime = parseMatchTime(m.fecha, m.hora);
+      const diffMs = mTime - now;
+      
+      if (diffMs > 0 && diffMs <= 60 * 60 * 1000) {
+        const pPred = ((cache.predicciones[uid] || {}).grupos || {})[key];
+        if (!pPred || pPred.gl === '' || pPred.gl === undefined || pPred.gv === '' || pPred.gv === undefined) {
+          new Notification("¡Partido a punto de empezar!", {
+            body: `Falta menos de 1 hora para el ${m.local} vs ${m.visitante} y no tienes predicción.`,
+            icon: "logo-limpio2.png"
+          });
+          window.notifiedMatches.add(m.n);
+        }
+      }
+    }
+  }
+}
+
+if ("Notification" in window && Notification.permission === "granted") {
+  startNotificationChecker();
 }
