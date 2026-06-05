@@ -1319,6 +1319,8 @@ function fireConfetti() {
 async function savePredGrupo(key){
   const uid=currentViewUser;
   if(!uid){ showToast('Selecciona un participante primero'); return; }
+  if(uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
+  if(getMatchLockStatusByKey(key, false)) { showToast('❌ Este partido ya está bloqueado'); return; }
   const l=document.getElementById('pi_'+key+'_l'), v=document.getElementById('pi_'+key+'_v');
   if(!l||!v||l.value===''||v.value===''){ showToast('Introduce el marcador'); return; }
   const gl=parseInt(l.value), gv=parseInt(v.value);
@@ -1350,12 +1352,18 @@ async function magicFill() {
   const uid = currentViewUser;
   if (!uid) { showToast('Selecciona un participante primero'); return; }
   
+  if (uid !== getMyId()) {
+    showToast('❌ Solo puedes rellenar tus propias predicciones');
+    return;
+  }
+
   let emptyMatches = [];
   GRUPOS.forEach(g => {
     g.partidos.forEach(m => {
       const key = `G${g.id}_${m.n}`;
+      const isLocked = getMatchLockStatusByKey(key, false);
       const preds = ((cache.predicciones[uid] || {}).grupos || {})[key];
-      if (!preds || preds.gl === '' || preds.gl === undefined) {
+      if (!isLocked && (!preds || preds.gl === '' || preds.gl === undefined)) {
         // Parse date for sorting
         const parts = m.fecha.split(' ');
         const day = parseInt(parts[0]);
@@ -1713,6 +1721,8 @@ function updateWinnerDropdown(code) {
 async function saveElimPredRow(code) {
   const uid = currentViewUser;
   if (!uid) { showToast('Selecciona un participante primero'); return; }
+  if (uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
+  if (getMatchLockStatusByKey(code, true)) { showToast('❌ Este partido ya está bloqueado'); return; }
 
   const localEl = document.getElementById('local-' + code);
   const visitanteEl = document.getElementById('visitante-' + code);
@@ -2017,6 +2027,7 @@ function renderSpecialTimestamp(key, isoStr){
 async function saveSpecial(type, value){
   const uid=currentViewUser;
   if(!uid){ showToast('Selecciona un participante primero'); return; }
+  if(uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
   if(!value) return;
   if(!cache.predicciones[uid]) cache.predicciones[uid]={grupos:{},elim:{},especiales:{},especialesTs:{}};
   const isNew=!cache.predicciones[uid].especiales[type];
@@ -2264,7 +2275,7 @@ async function doReset(){
 // ===================== USER SELECTOR =====================
 function renderUserSelector(fn){
   if(!cache.participantes.length) return '<span style="font-size:12px;color:var(--text3)">Sin participantes</span>';
-  return `<select class="form-input" style="width:180px;padding:6px 11px;font-size:13px" onchange="${fn}(this.value)">${cache.participantes.map(p=>`<option value="${p.id}" ${p.id===currentViewUser?'selected':''}>${p.name}${p.isAdmin?' 👑':''}</option>`).join('')}</select>`;
+  return `<select class="form-input" style="width:180px;padding:6px 11px;font-size:13px" onchange="${fn}(this.value)" ${!isAdmin()?'disabled':''}>${cache.participantes.map(p=>`<option value="${p.id}" ${p.id===currentViewUser?'selected':''}>${p.name}${p.isAdmin?' 👑':''}</option>`).join('')}</select>`;
 }
 function switchPredUser(uid){currentViewUser=uid;renderGruposPred();}
 function switchPredUserElim(uid){currentViewUser=uid;renderElimPred();}
