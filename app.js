@@ -582,7 +582,13 @@ function calcBonusRondas(uid){
     if(!bonus[round] || !bonus[round].pts) continue;
     let hits = 0;
     for(const code of ELIM_ROUND_CODES[round]){
-      if(ePreds[code] && eRes[code] && ePreds[code]===eRes[code]) hits++;
+      let w = ePreds[code];
+      const r = eRes[code];
+      if(!w || !r) continue;
+      if(w.startsWith('{')) {
+        try { w = JSON.parse(w).ganador; } catch(e){}
+      }
+      if(w === r) hits++;
     }
     if(hits >= bonus[round].n) total += bonus[round].pts;
   }
