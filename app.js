@@ -165,10 +165,13 @@ async function loadAllData(){
 
   const { data: normasData } = await sb.from('normas').select('*').eq('liga_id', liga_id).order('orden');
   if(normasData && normasData.length > 0){
-    cache.normas = {
-      pts: normasData.filter(n=>n.tipo==='pts').map(n=>n.datos),
-      normas: normasData.filter(n=>n.tipo==='norma').map(n=>n.datos)
-    };
+      let rawPts = normasData.filter(n=>n.tipo==='pts');
+      let pts = rawPts.length === 1 && Array.isArray(rawPts[0].datos) ? rawPts[0].datos : rawPts.map(n=>n.datos);
+      if(pts.length === 1 && Array.isArray(pts[0])) pts = pts[0];
+      let rawNormas = normasData.filter(n=>n.tipo==='norma');
+      let normas = rawNormas.length === 1 && Array.isArray(rawNormas[0].datos) ? rawNormas[0].datos : rawNormas.map(n=>n.datos);
+      if(normas.length === 1 && Array.isArray(normas[0])) normas = normas[0];
+      cache.normas = { pts, normas };
     cache.normasRaw = normasData;
     const bonusRow = normasData.find(n=>n.tipo==='bonus_aciertos');
     cache.bonusAciertos = bonusRow ? bonusRow.datos : getDefaultBonusAciertos();
@@ -197,9 +200,10 @@ function getDefaultBonusAciertos(){
 async function saveNormasToSupabase(){
   await sb.from('normas').delete().eq('liga_id', session.liga_id);
   const rows = [
-    { liga_id:session.liga_id, tipo:'pts', datos:cache.normas.pts||getDefaultPts(), orden:0 },
+    { liga_id:session.liga_id, tipo:'pts', datos:cache.normas.pts||DEFAULT_PTS, orden:0 },
+    { liga_id:session.liga_id, tipo:'norma', datos:cache.normas.normas||DEFAULT_NORMAS, orden:0 },
     { liga_id:session.liga_id, tipo:'bonus_aciertos', datos:cache.bonusAciertos||getDefaultBonusAciertos(), orden:0 },
-    ...((cache.normasRaw||[]).filter(n=>n.tipo!=='pts'&&n.tipo!=='bonus_aciertos').map(n=>({...n, liga_id:session.liga_id}))),
+    ...((cache.normasRaw||[]).filter(n=>n.tipo!=='pts'&&n.tipo!=='norma'&&n.tipo!=='bonus_aciertos').map(n=>({...n, liga_id:session.liga_id}))),
     { liga_id:session.liga_id, tipo:'config_modo', datos:{modo: cache.configModo || 'interactivo'}, orden:0 }
   ];
   if(rows.length > 0) await sb.from('normas').insert(rows);
