@@ -657,13 +657,26 @@ function calcScore(uid){
   const ptsFinal = getNormaPts('Final', '', 10);
   const ptsSub = getNormaPts('Subcampeón', '', 12);
   const ptsCamp = getNormaPts('Campeón 🏆', '', 20);
+  const ptsEspana = getNormaPts('España', 'exacto', 10);
 
   const gPreds = preds.grupos||{}, gRes = cache.resultados.grupos||{};
   for(const key in gPreds){
     const p=gPreds[key], r=gRes[key];
     if(!r||r.gl===''||r.gl===undefined) continue;
     const pg=parseInt(p.gl), pv=parseInt(p.gv), rg=parseInt(r.gl), rv=parseInt(r.gv);
-    if(pg===rg&&pv===rv){ grupos+=ptsExact; exactMatches++; continue; }
+    
+    let currentPtsExact = ptsExact;
+    const gid = key.charAt(1);
+    const mn = parseInt(key.substring(3));
+    const g = GRUPOS.find(x=>x.id===gid);
+    if(g) {
+      const matchObj = g.partidos.find(x=>x.n===mn);
+      if(matchObj && (matchObj.local === 'España' || matchObj.visitante === 'España')) {
+        currentPtsExact = ptsEspana;
+      }
+    }
+
+    if(pg===rg&&pv===rv){ grupos+=currentPtsExact; exactMatches++; continue; }
     const pw=pg>pv?'L':pg<pv?'V':'D', rw=rg>rv?'L':rg<rv?'V':'D';
     if(pw===rw) grupos+=ptsPartial;
   }
@@ -686,6 +699,7 @@ function calcScore(uid){
   const esp=preds.especiales||{}, re=cache.resultados.especiales||{};
   if(esp.campeon&&re.campeon&&esp.campeon===re.campeon) campeon_+=ptsCamp;
   if(esp.subcampeon&&re.subcampeon&&esp.subcampeon===re.subcampeon) sub+=ptsSub;
+  if(esp.pichichiEspana&&re.pichichiEspana&&esp.pichichiEspana.toLowerCase()===re.pichichiEspana.toLowerCase()) customPts+=getNormaPts('España', 'goleador', 10);
 
   (cache.normasRaw||[]).forEach(n=>{
     if(n.tipo==='special_custom'){
@@ -1992,7 +2006,7 @@ function renderEspeciales(){
   const isMe = uid === getMyId();
   const disStr = isMe ? '' : ' disabled';
 
-  ['select-campeon','select-subcampeon','input-pichichi','select-tercero','select-mas-goles','select-mas-tarjetas'].forEach(id => {
+  ['select-campeon','select-subcampeon','input-pichichi','input-pichichiEspana','select-tercero','select-mas-goles','select-mas-tarjetas'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.disabled = !isMe;
   });
@@ -2003,12 +2017,13 @@ function renderEspeciales(){
     if(esp.campeon) document.getElementById('select-campeon').value=esp.campeon;
     if(esp.subcampeon) document.getElementById('select-subcampeon').value=esp.subcampeon;
     if(esp.pichichi) document.getElementById('input-pichichi').value=esp.pichichi;
+    if(esp.pichichiEspana) document.getElementById('input-pichichiEspana').value=esp.pichichiEspana;
     if(esp.tercero) document.getElementById('select-tercero').value=esp.tercero;
     if(esp.masGoles) document.getElementById('select-mas-goles').value=esp.masGoles;
     if(esp.masTarjetas) document.getElementById('select-mas-tarjetas').value=esp.masTarjetas;
-    ['campeon','subcampeon','pichichi','tercero','masGoles','masTarjetas'].forEach(k=>renderSpecialTimestamp(k,ts[k]));
+    ['campeon','subcampeon','pichichi','pichichiEspana','tercero','masGoles','masTarjetas'].forEach(k=>renderSpecialTimestamp(k,ts[k]));
   } else {
-    ['campeon','subcampeon','pichichi','tercero','masGoles','masTarjetas'].forEach(k=>{
+    ['campeon','subcampeon','pichichi','pichichiEspana','tercero','masGoles','masTarjetas'].forEach(k=>{
       const el=document.getElementById('ts-'+k);
       if(el){el.className='pred-timestamp empty';el.innerHTML='';}
     });
@@ -2438,6 +2453,14 @@ function renderSuperadmin(res){
       <button class="sa-save" onclick="saveGlobalPichichi()">Guardar</button>
     </div>
   </div>`;
+  const pichEspana = esp['pichichiEspana']||'';
+  html += `<div class="sa-row">
+    <div><div class="sa-match-info">🇪🇸 Máximo Goleador de España ${pichEspana?`<span class="sa-result-tag">✓ ${pichEspana}</span>`:''}</div></div>
+    <div class="sa-inputs">
+      <input class="sa-inp-text" id="sa_esp_pichichiEspana" value="${pichEspana}" placeholder="Nombre del jugador">
+      <button class="sa-save" onclick="saveGlobalPichichiEspana()">Guardar</button>
+    </div>
+  </div>`;
   html += '</div>';
 
   body.innerHTML = html;
@@ -2494,6 +2517,18 @@ async function saveGlobalPichichi(){
   const { error } = await sb.from('resultados_globales').upsert({tipo:'especiales',match_key:'pichichi',valor,updated_at:new Date().toISOString()},{onConflict:'tipo,match_key'});
   if(error){ showToast('❌ Error: '+error.message); return; }
   showToast('✅ Pichichi guardado');
+  const { data } = await sb.from('resultados_globales').select('*');
+  const r={grupos:{},elim:{},especiales:{}};
+  for(const x of (data||[])){ r[x.tipo]=r[x.tipo]||{}; r[x.tipo][x.match_key]=x.valor; }
+  renderSuperadmin(r);
+}
+
+async function saveGlobalPichichiEspana(){
+  const valor = document.getElementById('sa_esp_pichichiEspana').value.trim();
+  if(!valor){ showToast('Escribe el nombre del jugador'); return; }
+  const { error } = await sb.from('resultados_globales').upsert({tipo:'especiales',match_key:'pichichiEspana',valor,updated_at:new Date().toISOString()},{onConflict:'tipo,match_key'});
+  if(error){ showToast('❌ Error: '+error.message); return; }
+  showToast('✅ Pichichi España guardado');
   const { data } = await sb.from('resultados_globales').select('*');
   const r={grupos:{},elim:{},especiales:{}};
   for(const x of (data||[])){ r[x.tipo]=r[x.tipo]||{}; r[x.tipo][x.match_key]=x.valor; }

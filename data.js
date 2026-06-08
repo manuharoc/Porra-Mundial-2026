@@ -165,7 +165,9 @@ const DEFAULT_PTS = [
   {fase:'Subcampeón',desc:'Subcampeón correcto',pts:12},
   {fase:'Campeón 🏆',desc:'Campeón del mundo',pts:20},
   {fase:'Pichichi',desc:'Máximo goleador',pts:10},
-  {fase:'3er puesto',desc:'3er clasificado correcto',pts:8}
+  {fase:'3er puesto',desc:'3er clasificado correcto',pts:8},
+  {fase:'España',desc:'Acertar resultado de España',pts:10},
+  {fase:'España',desc:'Máximo goleador de España',pts:10}
 ];
 
 const DEFAULT_NORMAS = [
