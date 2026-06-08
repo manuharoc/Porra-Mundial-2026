@@ -16,7 +16,7 @@ const cache = {
   resultados: { grupos:{}, elim:{}, especiales:{} },
   normas: { pts:[], normas:[] },
   normasRaw: [],      // raw Supabase rows — needed for custom specials
-  bonusRondas: null,   // { grupos:{n,pts}, r32:{n,pts}, octavos:{n,pts}, cuartos:{n,pts}, semis:{n,pts}, final:{n,pts} }
+  bonusAciertos: null,   // [ {n:10, pts:15}, {n:20, pts:30}, ... ]
   configModo: 'interactivo'
 };
 
@@ -148,36 +148,37 @@ async function loadAllData(){
       pts: normasData.filter(n=>n.tipo==='pts').map(n=>n.datos),
       normas: normasData.filter(n=>n.tipo==='norma').map(n=>n.datos)
     };
-    cache.normasRaw = normasData; // keep raw rows for custom specials
-    const bonusRow = normasData.find(n=>n.tipo==='bonus_rondas');
-    cache.bonusRondas = bonusRow ? bonusRow.datos : getDefaultBonusRondas();
+    cache.normasRaw = normasData;
+    const bonusRow = normasData.find(n=>n.tipo==='bonus_aciertos');
+    cache.bonusAciertos = bonusRow ? bonusRow.datos : getDefaultBonusAciertos();
     const configModoRow = normasData.find(n=>n.tipo==='config_modo');
     cache.configModo = configModoRow ? configModoRow.datos.modo : 'interactivo';
   } else {
     cache.normas = { pts: JSON.parse(JSON.stringify(DEFAULT_PTS)), normas: JSON.parse(JSON.stringify(DEFAULT_NORMAS)) };
     cache.normasRaw = [];
-    cache.bonusRondas = getDefaultBonusRondas();
+    cache.bonusAciertos = getDefaultBonusAciertos();
     await saveNormasToSupabase();
   }
 }
 
-function getDefaultBonusRondas(){
-  return {
-    grupos:  { n:16, pts:15 },
-    r32:     { n:12, pts:10 },
-    octavos: { n:6,  pts:8  },
-    cuartos: { n:3,  pts:6  },
-    semis:   { n:2,  pts:5  },
-    final:   { n:1,  pts:4  }
-  };
+function getDefaultBonusAciertos(){
+  return [
+    { n: 10, pts: 15 },
+    { n: 20, pts: 30 },
+    { n: 30, pts: 45 },
+    { n: 40, pts: 60 },
+    { n: 50, pts: 75 },
+    { n: 60, pts: 90 },
+    { n: 70, pts: 105 }
+  ];
 }
 
 async function saveNormasToSupabase(){
   await sb.from('normas').delete().eq('liga_id', session.liga_id);
   const rows = [
-    ...cache.normas.pts.map((p,i)=>({ liga_id:session.liga_id, tipo:'pts', datos:p, orden:i })),
-    ...cache.normas.normas.map((n,i)=>({ liga_id:session.liga_id, tipo:'norma', datos:n, orden:i })),
-    { liga_id:session.liga_id, tipo:'bonus_rondas', datos:cache.bonusRondas||getDefaultBonusRondas(), orden:0 },
+    { liga_id:session.liga_id, tipo:'pts', datos:cache.normas.pts||getDefaultPts(), orden:0 },
+    { liga_id:session.liga_id, tipo:'bonus_aciertos', datos:cache.bonusAciertos||getDefaultBonusAciertos(), orden:0 },
+    ...((cache.normasRaw||[]).filter(n=>n.tipo!=='pts'&&n.tipo!=='bonus_aciertos').map(n=>({...n, liga_id:session.liga_id}))),
     { liga_id:session.liga_id, tipo:'config_modo', datos:{modo: cache.configModo || 'interactivo'}, orden:0 }
   ];
   if(rows.length > 0) await sb.from('normas').insert(rows);
@@ -562,7 +563,7 @@ function closeMobileMenu(){
   document.body.style.overflow = '';
 }
 
-// ===================== BONUS RONDAS =====================
+// ===================== BONUS ACIERTOS =====================
 const ELIM_ROUND_CODES = {
   r32:     ['M73','M74','M75','M76','M77','M78','M79','M80','M81','M82','M83','M84','M85','M86','M87','M88'],
   octavos: ['M89','M90','M91','M92','M93','M94','M95','M96'],
@@ -571,41 +572,47 @@ const ELIM_ROUND_CODES = {
   final:   ['M104']
 };
 
-function calcBonusRondas(uid){
-  const bonus = cache.bonusRondas;
-  if(!bonus) return 0;
+function calcBonusAciertos(uid){
+  const bonus = cache.bonusAciertos;
+  if(!bonus || !Array.isArray(bonus)) return 0;
   const preds = cache.predicciones[uid] || {};
   const eRes = cache.resultados.elim||{};
   const ePreds = preds.elim||{};
-  let total = 0;
-  for(const round of ['r32','octavos','cuartos','semis','final']){
-    if(!bonus[round] || !bonus[round].pts) continue;
-    let hits = 0;
-    for(const code of ELIM_ROUND_CODES[round]){
-      let w = ePreds[code];
-      const r = eRes[code];
-      if(!w || !r) continue;
-      if(w.startsWith('{')) {
-        try { w = JSON.parse(w).ganador; } catch(e){}
-      }
-      if(w === r) hits++;
-    }
-    if(hits >= bonus[round].n) total += bonus[round].pts;
+  const gPreds = preds.grupos||{}, gRes = cache.resultados.grupos||{};
+  
+  let totalHits = 0;
+
+  // Aciertos en fase de grupos (ganador, perdedor, empate o exacto)
+  for(const key in gPreds){
+    const p=gPreds[key], r=gRes[key];
+    if(!r||r.gl===''||r.gl===undefined) continue;
+    const pg=parseInt(p.gl),pv=parseInt(p.gv),rg=parseInt(r.gl),rv=parseInt(r.gv);
+    if(pg===rg&&pv===rv){ totalHits++; continue; }
+    const pw=pg>pv?'L':pg<pv?'V':'D', rw=rg>rv?'L':rg<rv?'V':'D';
+    if(pw===rw) totalHits++;
   }
-  if(bonus.grupos && bonus.grupos.pts > 0){
-    const gPreds = preds.grupos||{}, gRes = cache.resultados.grupos||{};
-    let gHits = 0;
-    for(const key in gPreds){
-      const p=gPreds[key], r=gRes[key];
-      if(!r||r.gl===''||r.gl===undefined) continue;
-      const pg=parseInt(p.gl),pv=parseInt(p.gv),rg=parseInt(r.gl),rv=parseInt(r.gv);
-      if(pg===rg&&pv===rv){ gHits++; continue; }
-      const pw=pg>pv?'L':pg<pv?'V':'D', rw=rg>rv?'L':rg<rv?'V':'D';
-      if(pw===rw) gHits++;
+
+  // Aciertos en eliminatorias (ganador que pasa de ronda)
+  for(const code in ePreds){
+    let w = ePreds[code];
+    const r = eRes[code];
+    if(!w || !r) continue;
+    if(w.startsWith('{')) {
+      try { w = JSON.parse(w).ganador; } catch(e){}
     }
-    if(gHits >= bonus.grupos.n) total += bonus.grupos.pts;
+    if(w === r) totalHits++;
   }
-  return total;
+
+  // Buscar el escalón alcanzado
+  let awardedPts = 0;
+  const sortedBonus = [...bonus].sort((a,b) => a.n - b.n);
+  for(const tier of sortedBonus){
+    if(totalHits >= tier.n) {
+      awardedPts = tier.pts; // Toma el valor del último nivel superado
+    }
+  }
+  
+  return awardedPts;
 }
 
 // ===================== SCORING =====================
@@ -668,7 +675,7 @@ function calcScore(uid){
     }
   });
 
-  const bonus = calcBonusRondas(uid);
+  const bonus = calcBonusAciertos(uid);
   return {grupos,r32,octavos,cuartos,semis,final:final_,campeon:campeon_,sub,customPts,bonus,total:grupos+r32+octavos+cuartos+semis+final_+campeon_+sub+customPts+bonus,exactMatches};
 }
 
@@ -1956,11 +1963,11 @@ function renderEspeciales(){
   const csa = document.getElementById('custom-specials-admin');
   if(csa) csa.innerHTML = adminMode
     ? `<button class="btn btn-accent btn-sm" onclick="openCustomSpecialModal()">+ A&ntilde;adir Pregunta</button>
-       <button class="btn btn-sm" style="margin-left:6px" onclick="openBonusRondasConfig()">🎯 Bonus rondas</button>`
+       <button class="btn btn-sm" style="margin-left:6px" onclick="openBonusAciertosConfig()">🎯 Bonus aciertos</button>`
     : '';
 
   // Render bonus panel (visible for all)
-  renderBonusRondasPanel();
+  renderBonusAciertosPanel();
   const isMe = uid === getMyId();
   const disStr = isMe ? '' : ' disabled';
 
@@ -2676,4 +2683,78 @@ function checkUpcomingMatchesForNotifs() {
 
 if ("Notification" in window && Notification.permission === "granted") {
   startNotificationChecker();
+}
+
+// ===================== BONUS ACIERTOS UI =====================
+function renderBonusAciertosPanel() {
+  const panel = document.getElementById('bonus-aciertos-panel');
+  if(!panel) return;
+  const bonus = cache.bonusAciertos;
+  if(!bonus || !Array.isArray(bonus)) return;
+  
+  const sortedBonus = [...bonus].sort((a,b) => a.n - b.n);
+  
+  let html = `<div style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:12px;">🎯 Bonus Aciertos Totales</div>
+              <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Acumula puntos extra acertando el resultado en la fase de grupos y los ganadores en las eliminatorias. Solo recibes los puntos del nivel más alto que hayas superado (no es acumulativo).</div>`;
+  
+  html += `<div class="special-grid">`;
+  for(const tier of sortedBonus) {
+    html += `<div class="special-card" style="text-align:center;padding:16px">
+               <div style="font-size:24px;font-weight:800;color:var(--accent);margin-bottom:4px">+${tier.pts} pts</div>
+               <div style="font-size:12px;color:var(--text3)">Al llegar a <strong>${tier.n}</strong> aciertos</div>
+             </div>`;
+  }
+  html += `</div>`;
+  
+  panel.innerHTML = html;
+}
+
+function openBonusAciertosConfig() {
+  const tbody = document.getElementById('bonus-aciertos-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  const bonus = cache.bonusAciertos || [];
+  const sortedBonus = [...bonus].sort((a,b) => a.n - b.n);
+  
+  for(const tier of sortedBonus) {
+    addBonusAciertoRowHTML(tier.n, tier.pts);
+  }
+  
+  openModal('modal-bonus-aciertos');
+}
+
+function addBonusAciertoRow() {
+  addBonusAciertoRowHTML('', '');
+}
+
+function addBonusAciertoRowHTML(nVal, ptsVal) {
+  const tbody = document.getElementById('bonus-aciertos-tbody');
+  if(!tbody) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="number" class="form-input acierto-n" value="${nVal}" placeholder="Ej: 10" style="padding:6px;min-height:0"></td>
+    <td><input type="number" class="form-input acierto-pts" value="${ptsVal}" placeholder="Ej: 15" style="padding:6px;min-height:0"></td>
+    <td><button class="btn btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+async function saveBonusAciertosConfig() {
+  const tbody = document.getElementById('bonus-aciertos-tbody');
+  if(!tbody) return;
+  const rows = tbody.querySelectorAll('tr');
+  const newBonus = [];
+  rows.forEach(tr => {
+    const n = parseInt(tr.querySelector('.acierto-n').value);
+    const pts = parseInt(tr.querySelector('.acierto-pts').value);
+    if(!isNaN(n) && !isNaN(pts)) {
+      newBonus.push({ n, pts });
+    }
+  });
+  
+  cache.bonusAciertos = newBonus;
+  await saveNormasToSupabase();
+  showToast('Bonus Aciertos actualizado correctamente');
+  closeModal('modal-bonus-aciertos');
+  renderBonusAciertosPanel();
 }

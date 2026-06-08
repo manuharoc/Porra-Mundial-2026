@@ -346,6 +346,7 @@
         
         <div id="custom-specials-admin" style="margin-bottom:14px; text-align:right"></div>
         <div class="special-grid" id="custom-special-grid"></div>
+        <div id="bonus-aciertos-panel" style="margin-top:24px"></div>
       </div>
     </div>
 
@@ -539,6 +540,29 @@
       <button class="modal-close" onclick="closeModal('modal-participant')">✕</button>
     </div>
     <div id="modal-p-content"></div>
+  </div>
+</div>
+
+<!-- MODAL: Configurar Bonus Aciertos -->
+<div class="modal-overlay" id="modal-bonus-aciertos">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div class="modal-title">Configurar Bonus Aciertos</div>
+      <button class="modal-close" onclick="closeModal('modal-bonus-aciertos')">✕</button>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">
+      Define cuántos puntos extra recibe un participante al alcanzar un número total de predicciones acertadas en todo el torneo (fase de grupos y eliminatorias).
+    </div>
+    <div class="table-wrap">
+      <table class="pts-table">
+        <thead><tr><th>Aciertos Requeridos</th><th>Puntos de Bonus</th><th></th></tr></thead>
+        <tbody id="bonus-aciertos-tbody"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-sm" onclick="addBonusAciertoRow()">+ Añadir Nivel</button>
+      <button class="btn btn-accent btn-sm" style="margin-left:auto" onclick="saveBonusAciertosConfig()">Guardar Cambios</button>
+    </div>
   </div>
 </div>
 
