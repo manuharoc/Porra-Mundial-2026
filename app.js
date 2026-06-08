@@ -168,9 +168,13 @@ async function loadAllData(){
       let rawPts = normasData.filter(n=>n.tipo==='pts');
       let pts = rawPts.length === 1 && Array.isArray(rawPts[0].datos) ? rawPts[0].datos : rawPts.map(n=>n.datos);
       if(pts.length === 1 && Array.isArray(pts[0])) pts = pts[0];
+      if(!pts || pts.length === 0) pts = JSON.parse(JSON.stringify(DEFAULT_PTS));
+      
       let rawNormas = normasData.filter(n=>n.tipo==='norma');
       let normas = rawNormas.length === 1 && Array.isArray(rawNormas[0].datos) ? rawNormas[0].datos : rawNormas.map(n=>n.datos);
       if(normas.length === 1 && Array.isArray(normas[0])) normas = normas[0];
+      if(!normas || normas.length === 0) normas = JSON.parse(JSON.stringify(DEFAULT_NORMAS));
+      
       cache.normas = { pts, normas };
     cache.normasRaw = normasData;
     const bonusRow = normasData.find(n=>n.tipo==='bonus_aciertos');
