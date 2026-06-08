@@ -46,7 +46,28 @@ function renderAvatarHtml(p, size='md'){
   const inner = isPhoto
     ? `<img class="av-img" src="${p.photo}" alt="${p.name}">`
     : `<div class="av-initials" style="background:${p.avatarBg||'rgba(123,44,191,.15)'};color:${p.avatarColor||'var(--accent)'};font-size:${Math.round(px*0.35)}px">${(p.name||'?').slice(0,2).toUpperCase()}</div>`;
-  return `<div class="av-wrap${adminClass}" style="width:${px}px;height:${px}px">${inner}${crown}</div>`;
+  return `<div class="av-wrap${adminClass}" style="width:${px}px;height:${px}px;cursor:pointer;" onclick="event.stopPropagation(); viewAvatarFullScreen('${p.id}')">${inner}${crown}</div>`;
+}
+
+function viewAvatarFullScreen(uid) {
+  const p = cache.participantes.find(x => x.id === uid);
+  if (!p) return;
+  const modal = document.getElementById('modal-avatar-fullscreen');
+  const imgContainer = document.getElementById('fullscreen-avatar-content');
+  
+  let html = '';
+  if (p.photo && p.photo.startsWith('data:image')) {
+    html = `<img src="${p.photo}" style="width:100%;max-width:300px;aspect-ratio:1/1;border-radius:50%;box-shadow:0 10px 40px rgba(0,0,0,0.5);display:block;margin:0 auto;object-fit:cover;">`;
+  } else {
+    html = `<div style="width:250px;height:250px;border-radius:50%;background:${p.avatarBg||'rgba(123,44,191,.15)'};color:${p.avatarColor||'var(--accent)'};font-size:100px;display:flex;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 10px 40px rgba(0,0,0,0.5);">${(p.name||'?').slice(0,2).toUpperCase()}</div>`;
+  }
+  html += `<div style="text-align:center;color:white;font-size:28px;font-weight:700;margin-top:24px;text-shadow: 0 2px 10px rgba(0,0,0,0.5);">${p.name}</div>`;
+  if(p.isAdmin) {
+    html += `<div style="text-align:center;color:var(--gold);font-size:14px;font-weight:600;margin-top:6px;text-shadow: 0 2px 10px rgba(0,0,0,0.5);">👑 Administrador</div>`;
+  }
+  
+  imgContainer.innerHTML = html;
+  modal.classList.add('open');
 }
 
 // Resize a File to size×size JPEG base64 using canvas
