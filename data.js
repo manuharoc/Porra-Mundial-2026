@@ -53,8 +53,8 @@ const GRUPOS = [
     {n:2,fecha:'16 jun',hora:'03:00*',local:'Irán',visitante:'Nueva Zelanda',sede:'SoFi, Los Ángeles'},
     {n:3,fecha:'21 jun',hora:'21:00',local:'Bélgica',visitante:'Irán',sede:'Lincoln, Filadelfia'},
     {n:4,fecha:'22 jun',hora:'00:00*',local:'Nueva Zelanda',visitante:'Egipto',sede:'Lincoln, Filadelfia'},
-    {n:5,fecha:'26 jun',hora:'01:00*',local:'Irán',visitante:'Bélgica',sede:'Gillette, Boston'},
-    {n:6,fecha:'26 jun',hora:'01:00*',local:'Egipto',visitante:'Nueva Zelanda',sede:'Gillette, Boston'}
+    {n:5,fecha:'26 jun',hora:'01:00*',local:'Nueva Zelanda',visitante:'Bélgica',sede:'Gillette, Boston'},
+    {n:6,fecha:'26 jun',hora:'01:00*',local:'Egipto',visitante:'Irán',sede:'Gillette, Boston'}
   ]},
   {id:'H',equipos:['España','Cabo Verde','Arabia Saudí','Uruguay'],partidos:[
     {n:1,fecha:'15 jun',hora:'18:00',local:'España',visitante:'Cabo Verde',sede:'Mercedes-Benz, Atlanta'},
