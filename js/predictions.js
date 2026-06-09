@@ -676,6 +676,22 @@ async function saveElimPredRow(code) {
 // ===================== PRED ELIM =====================
 let currentElimView = 'list';
 
+function areGroupsFullyPredicted(uid) {
+  if (!uid) return false;
+  let filledCount = 0;
+  const preds = (cache.predicciones[uid] || {}).grupos || {};
+  GRUPOS.forEach(g => {
+    g.partidos.forEach(m => {
+      const key = `G${g.id}_${m.n}`;
+      const pred = preds[key];
+      if (pred && pred.gl !== '' && pred.gl !== undefined && pred.gv !== '' && pred.gv !== undefined) {
+        filledCount++;
+      }
+    });
+  });
+  return filledCount === 72;
+}
+
 function renderElimPred(){
   const c=document.getElementById('elim-pred-content');
   if(!c) return;
@@ -696,6 +712,19 @@ function renderElimPred(){
   if(!cache.participantes.length){ 
     document.getElementById('elim-view-container').innerHTML='<div class="empty-state"><div class="ei">👥</div><p>Añade participantes primero.</p></div>'; 
     return; 
+  }
+
+  const uid = currentViewUser;
+  const modo = cache.configModo || 'interactivo';
+  if (modo === 'interactivo' && !areGroupsFullyPredicted(uid)) {
+    document.getElementById('elim-view-container').innerHTML = `
+      <div class="empty-state" style="margin-top:24px;">
+        <div class="ei">🔒</div>
+        <p style="font-size:16px; color:var(--text); margin-bottom:8px;"><strong>Eliminatorias Bloqueadas</strong></p>
+        <p style="font-size:14px; color:var(--text2); max-width:400px; margin:0 auto;">Debes completar todas las predicciones de la Fase de Grupos (72 partidos) para desbloquear y predecir la fase final.</p>
+      </div>
+    `;
+    return;
   }
 
   if (currentElimView === 'bracket') {
