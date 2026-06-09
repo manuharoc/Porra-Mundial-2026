@@ -5,8 +5,16 @@ const OFFLINE_ASSETS = [
   'logo-limpio2.png',
   'manifest.json',
   'style.css',
-  'app.js',
-  'data.js'
+  'data.js',
+  'js/globals.js',
+  'js/data.js',
+  'js/auth.js',
+  'js/scoring.js',
+  'js/ui-core.js',
+  'js/predictions.js',
+  'js/views.js',
+  'js/admin.js',
+  'js/main.js'
 ];
 
 // Install: pre-cache the shell
