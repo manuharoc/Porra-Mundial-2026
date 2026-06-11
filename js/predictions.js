@@ -196,6 +196,12 @@ function renderGruposPred(){
   }
 
   c.innerHTML = html;
+  
+  // Respetar estado del checkbox de ocultar completados tras renderizar
+  const cb = document.getElementById('hide-filled-matches');
+  if (cb && cb.checked) {
+    toggleFilledMatches();
+  }
 }
 
 function renderPredInputsHtml(key){
@@ -839,6 +845,12 @@ function renderElimListView() {
     html+='</div>';
   });
   container.innerHTML=html;
+
+  // Respetar estado del checkbox de ocultar completados tras renderizar
+  const cb = document.getElementById('hide-filled-matches');
+  if (cb && cb.checked) {
+    toggleFilledMatches();
+  }
 }
 
 function renderElimBracketView() {
