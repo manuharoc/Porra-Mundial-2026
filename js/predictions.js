@@ -242,9 +242,21 @@ async function savePredGrupo(key){
   if(!l||!v||l.value===''||v.value===''){ showToast('Introduce el marcador'); return; }
   const gl=parseInt(l.value), gv=parseInt(v.value);
   
+  r32Memo.ts = 0;
+  const oldR32 = JSON.stringify(getPredictedR32(uid));
+
   if(!cache.predicciones[uid]) cache.predicciones[uid]={grupos:{},elim:{},especiales:{},especialesTs:{}};
   cache.predicciones[uid].grupos[key]={gl,gv};
   
+  r32Memo.ts = 0;
+  const newR32 = JSON.stringify(getPredictedR32(uid));
+  const changedR32 = oldR32 !== newR32 && Object.keys(cache.predicciones[uid].elim || {}).length > 0;
+
+  if (changedR32) {
+    cache.predicciones[uid].elim = {};
+    await sb.from('predicciones_elim').delete().eq('participante_id', uid);
+  }
+
   const btn=document.getElementById('psb_'+key);
   if(btn){ btn.classList.add('saved'); }
   
@@ -253,7 +265,11 @@ async function savePredGrupo(key){
     showToast('❌ Error al guardar'); 
     if(btn) btn.classList.remove('saved');
   } else { 
-    showToast('✅ Predicción guardada'); 
+    if (changedR32) {
+      showToast('⚠️ Cruces alterados. Eliminatorias reiniciadas.');
+    } else {
+      showToast('✅ Predicción guardada'); 
+    }
     fireConfetti(); 
     renderGruposPred();
   }
@@ -302,6 +318,9 @@ async function magicFill() {
   const matchesToFill = emptyMatches.slice(0, 12);
 
   showToast(`Rellenando próximos ${matchesToFill.length} partidos...`);
+  
+  r32Memo.ts = 0;
+  const oldR32 = JSON.stringify(getPredictedR32(uid));
   const upsertData = matchesToFill.map(match => {
     const gl = Math.floor(Math.random() * 4); // 0 to 3
     const gv = Math.floor(Math.random() * 4); // 0 to 3
@@ -313,11 +332,24 @@ async function magicFill() {
     return { participante_id: uid, match_key: match.key, goles_local: gl, goles_visitante: gv };
   });
 
+  r32Memo.ts = 0;
+  const newR32 = JSON.stringify(getPredictedR32(uid));
+  const changedR32 = oldR32 !== newR32 && Object.keys(cache.predicciones[uid].elim || {}).length > 0;
+
+  if (changedR32) {
+    cache.predicciones[uid].elim = {};
+    await sb.from('predicciones_elim').delete().eq('participante_id', uid);
+  }
+
   const { error } = await sb.from('predicciones_grupos').upsert(upsertData, { onConflict: 'participante_id,match_key' });
   if (error) {
     showToast('❌ Error al autocompletar');
   } else {
-    showToast('🎲 ¡Todos los partidos rellenados!');
+    if (changedR32) {
+      showToast('⚠️ Eliminatorias reiniciadas por cambio en grupos');
+    } else {
+      showToast('🎲 ¡Todos los partidos rellenados!');
+    }
     fireConfetti();
     renderGruposPred();
   }
@@ -716,7 +748,9 @@ function renderElimPred(){
 
   const uid = currentViewUser;
   const modo = cache.configModo || 'interactivo';
-  if (modo === 'interactivo' && !areGroupsFullyPredicted(uid)) {
+  const groupIsLocked = getMatchLockStatusByKey('GA_1', false); // Arbitrary group match to check if groups are locked by time
+
+  if (modo === 'interactivo' && !areGroupsFullyPredicted(uid) && !groupIsLocked) {
     document.getElementById('elim-view-container').innerHTML = `
       <div class="empty-state" style="margin-top:24px;">
         <div class="ei">🔒</div>
