@@ -60,7 +60,7 @@ function getNormaPts(fase, descSubstring, defaultVal) {
 
 function calcScore(uid){
   const preds = cache.predicciones[uid] || {};
-  let grupos=0, r32=0, octavos=0, cuartos=0, semis=0, final_=0, campeon_=0, sub=0, customPts=0, exactMatches=0;
+  let grupos=0, r32=0, octavos=0, cuartos=0, semis=0, final_=0, campeon_=0, sub=0, customPts=0, exactMatches=0, partialMatches=0;
   
   const ptsExact = getNormaPts('Grupos', 'exacto', 3);
   const ptsPartial = getNormaPts('Grupos', 'correcto', 1);
@@ -92,7 +92,7 @@ function calcScore(uid){
 
     if(pg===rg&&pv===rv){ grupos+=currentPtsExact; exactMatches++; continue; }
     const pw=pg>pv?'L':pg<pv?'V':'D', rw=rg>rv?'L':rg<rv?'V':'D';
-    if(pw===rw) grupos+=ptsPartial;
+    if(pw===rw) { grupos+=ptsPartial; partialMatches++; }
   }
   const ePreds=preds.elim||{}, eRes=cache.resultados.elim||{};
   for(const code in ePreds){
@@ -125,6 +125,6 @@ function calcScore(uid){
   });
 
   const bonus = calcBonusAciertos(uid);
-  return {grupos,r32,octavos,cuartos,semis,final:final_,campeon:campeon_,sub,customPts,bonus,total:grupos+r32+octavos+cuartos+semis+final_+campeon_+sub+customPts+bonus,exactMatches};
+  return {grupos,r32,octavos,cuartos,semis,final:final_,campeon:campeon_,sub,customPts,bonus,total:grupos+r32+octavos+cuartos+semis+final_+campeon_+sub+customPts+bonus,exactMatches,partialMatches};
 }
 

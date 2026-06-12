@@ -371,7 +371,30 @@ function openVsModal(rivalId) {
   const overlay = document.getElementById('modal-overlay');
   if(!m || !overlay) return;
 
-  let html = `<div style="text-align:center;margin-bottom:20px;font-family:'Outfit',sans-serif;font-size:24px;color:var(--text)">TÚ <span style="font-size:16px;color:var(--text3)">vs</span> <span style="color:var(--accent)">${rival.name}</span></div>`;
+  const myScore = calcScore(me);
+  const rivalScore = calcScore(rivalId);
+
+  let html = `<div style="text-align:center;margin-bottom:10px;font-family:'Outfit',sans-serif;font-size:24px;color:var(--text)">TÚ <span style="font-size:16px;color:var(--text3)">vs</span> <span style="color:var(--accent)">${rival.name}</span></div>`;
+  
+  html += `<div style="display:flex; justify-content:space-around; align-items:center; margin-bottom: 20px; background:var(--s2); padding: 15px; border-radius: 12px;">
+    <div style="text-align:center">
+      <div style="font-size:24px;font-weight:bold;color:var(--accent);font-family:'Outfit',sans-serif;">${myScore.exactMatches}</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Resultados<br>Exactos</div>
+      <div style="font-size:24px;font-weight:bold;color:var(--accent);margin-top:10px;font-family:'Outfit',sans-serif;">${myScore.partialMatches}</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Tendencias<br>(Ganador/Empate)</div>
+    </div>
+    <div style="text-align:center; color:var(--text3); font-size:16px; font-weight:bold; font-family:'Outfit',sans-serif; opacity:0.5">
+      VS
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:24px;font-weight:bold;color:var(--text);font-family:'Outfit',sans-serif;">${rivalScore.exactMatches}</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Resultados<br>Exactos</div>
+      <div style="font-size:24px;font-weight:bold;color:var(--text);margin-top:10px;font-family:'Outfit',sans-serif;">${rivalScore.partialMatches}</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Tendencias<br>(Ganador/Empate)</div>
+    </div>
+  </div>`;
+
+  html += `<div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-weight:bold;text-transform:uppercase;letter-spacing:1px">Próximos Partidos</div>`;
   html += `<table style="width:100%;font-size:13px;text-align:center;border-collapse:collapse;background:var(--s2);border-radius:12px;overflow:hidden">
             <tr style="background:var(--s1);color:var(--text3);font-weight:bold;font-size:11px"><td style="padding:10px">Partido</td><td style="padding:10px">Tú</td><td style="padding:10px">${rival.name}</td></tr>`;
 
