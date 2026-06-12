@@ -157,7 +157,11 @@ module.exports = async (req, res) => {
       }
     }
 
-    return res.status(200).json({ success: true, updates: updatesCount });
+    return res.status(200).json({ 
+      success: true, 
+      updates: updatesCount,
+      debug: updatesCount === 0 ? apiData.response.slice(0, 5) : undefined
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
