@@ -71,9 +71,8 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: "Missing environment variables" });
     }
 
-    // 1. Fetch today's matches from API-Football (League 1 = World Cup, Season 2026)
-    const today = new Date().toISOString().split('T')[0];
-    const apiUrl = `https://v3.football.api-sports.io/fixtures?date=${today}&league=1&season=2026`;
+    // 1. Fetch all matches from API-Football for the tournament
+    const apiUrl = `https://v3.football.api-sports.io/fixtures?league=1&season=2026`;
     
     const apiRes = await fetch(apiUrl, {
       headers: {
