@@ -191,7 +191,8 @@ module.exports = async (req, res) => {
       debug: {
         gruposLength: GRUPOS.length,
         gruposError: gruposExtractError,
-        matches: matchDebug
+        matches: matchDebug,
+        raw_debug: apiData.raw_debug
       }
     });
   } catch (error) {
