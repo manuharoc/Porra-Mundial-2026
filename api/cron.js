@@ -71,19 +71,29 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: "Missing environment variables" });
     }
 
-    // 1. Fetch all matches from API-Football for the tournament
-    const apiUrl = `https://v3.football.api-sports.io/fixtures?league=1&season=2026`;
+    // 1. Fetch matches from API-Football for yesterday and today (bypasses Free tier season restriction)
+    const today = new Date();
+    const isoToday = today.toISOString().split('T')[0];
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isoYesterday = yesterday.toISOString().split('T')[0];
+
+    const headers = { 'x-apisports-key': API_FOOTBALL_KEY };
     
-    const apiRes = await fetch(apiUrl, {
-      headers: {
-        'x-apisports-key': API_FOOTBALL_KEY
-      }
-    });
+    // Fetch Today
+    const resToday = await fetch(`https://v3.football.api-sports.io/fixtures?league=1&date=${isoToday}`, { headers });
+    const dataToday = await resToday.json();
     
-    const apiData = await apiRes.json();
-    if (!apiData || !apiData.response) {
-      return res.status(500).json({ error: "Invalid API-Football response", data: apiData });
+    // Fetch Yesterday
+    const resYesterday = await fetch(`https://v3.football.api-sports.io/fixtures?league=1&date=${isoYesterday}`, { headers });
+    const dataYesterday = await resYesterday.json();
+
+    if (!dataToday || !dataToday.response || !dataYesterday || !dataYesterday.response) {
+      return res.status(500).json({ error: "Invalid API-Football response", today: dataToday, yesterday: dataYesterday });
     }
+
+    const allMatches = [...dataYesterday.response, ...dataToday.response];
+    const apiData = { response: allMatches, raw_debug: { today: dataToday, yesterday: dataYesterday } };
 
     // 2. Read local data.js to get GRUPOS
     const dataJsPath = path.join(process.cwd(), 'data.js');
