@@ -81,18 +81,20 @@ module.exports = async (req, res) => {
     const headers = { 'x-apisports-key': API_FOOTBALL_KEY };
     
     // Fetch Today
-    const resToday = await fetch(`https://v3.football.api-sports.io/fixtures?league=1&date=${isoToday}`, { headers });
+    const resToday = await fetch(`https://v3.football.api-sports.io/fixtures?date=${isoToday}`, { headers });
     const dataToday = await resToday.json();
     
     // Fetch Yesterday
-    const resYesterday = await fetch(`https://v3.football.api-sports.io/fixtures?league=1&date=${isoYesterday}`, { headers });
+    const resYesterday = await fetch(`https://v3.football.api-sports.io/fixtures?date=${isoYesterday}`, { headers });
     const dataYesterday = await resYesterday.json();
 
-    if (!dataToday || !dataToday.response || !dataYesterday || !dataYesterday.response) {
+    if (!dataToday || !dataYesterday) {
       return res.status(500).json({ error: "Invalid API-Football response", today: dataToday, yesterday: dataYesterday });
     }
 
-    const allMatches = [...dataYesterday.response, ...dataToday.response];
+    // Filter locally to only include World Cup matches (league id 1)
+    const allMatchesRaw = [...(dataYesterday.response || []), ...(dataToday.response || [])];
+    const allMatches = allMatchesRaw.filter(m => m.league && m.league.id === 1);
     const apiData = { response: allMatches, raw_debug: { today: dataToday, yesterday: dataYesterday } };
 
     // 2. Read local data.js to get GRUPOS
