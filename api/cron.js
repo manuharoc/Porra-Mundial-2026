@@ -160,7 +160,7 @@ module.exports = async (req, res) => {
     return res.status(200).json({ 
       success: true, 
       updates: updatesCount,
-      debug: updatesCount === 0 ? apiData.response.slice(0, 5) : undefined
+      debug: apiData
     });
   } catch (error) {
     console.error(error);
