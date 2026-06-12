@@ -44,14 +44,12 @@ async function loadAllData(){
   const { data: normasData } = await sb.from('normas').select('*').eq('liga_id', liga_id).order('orden');
   if(normasData && normasData.length > 0){
       let rawPts = normasData.filter(n=>n.tipo==='pts');
-      let pts = rawPts.length === 1 && Array.isArray(rawPts[0].datos) ? rawPts[0].datos : rawPts.map(n=>n.datos);
-      if(pts.length === 1 && Array.isArray(pts[0])) pts = pts[0];
-      if(!pts || pts.length === 0) pts = JSON.parse(JSON.stringify(DEFAULT_PTS));
+      let pts = rawPts.length > 0 ? rawPts[rawPts.length-1].datos : null;
+      if(!pts || pts.length === 0 || !Array.isArray(pts)) pts = JSON.parse(JSON.stringify(DEFAULT_PTS));
       
       let rawNormas = normasData.filter(n=>n.tipo==='norma');
-      let normas = rawNormas.length === 1 && Array.isArray(rawNormas[0].datos) ? rawNormas[0].datos : rawNormas.map(n=>n.datos);
-      if(normas.length === 1 && Array.isArray(normas[0])) normas = normas[0];
-      if(!normas || normas.length === 0) normas = JSON.parse(JSON.stringify(DEFAULT_NORMAS));
+      let normas = rawNormas.length > 0 ? rawNormas[rawNormas.length-1].datos : null;
+      if(!normas || normas.length === 0 || !Array.isArray(normas)) normas = JSON.parse(JSON.stringify(DEFAULT_NORMAS));
       
       cache.normas = { pts, normas };
     cache.normasRaw = normasData;
@@ -85,9 +83,20 @@ async function saveNormasToSupabase(){
     { liga_id:session.liga_id, tipo:'pts', datos:cache.normas.pts||DEFAULT_PTS, orden:0 },
     { liga_id:session.liga_id, tipo:'norma', datos:cache.normas.normas||DEFAULT_NORMAS, orden:0 },
     { liga_id:session.liga_id, tipo:'bonus_aciertos', datos:cache.bonusAciertos||getDefaultBonusAciertos(), orden:0 },
-    ...((cache.normasRaw||[]).filter(n=>n.tipo!=='pts'&&n.tipo!=='norma'&&n.tipo!=='bonus_aciertos').map(n=>({...n, liga_id:session.liga_id}))),
+    ...((cache.normasRaw||[])
+      .filter(n=>n.tipo!=='pts'&&n.tipo!=='norma'&&n.tipo!=='bonus_aciertos'&&n.tipo!=='config_modo')
+      .map(n=>{
+        const { id, ...rest } = n; 
+        return {...rest, liga_id:session.liga_id};
+      })),
     { liga_id:session.liga_id, tipo:'config_modo', datos:{modo: cache.configModo || 'interactivo'}, orden:0 }
   ];
-  if(rows.length > 0) await sb.from('normas').insert(rows);
+  if(rows.length > 0) {
+    const { error } = await sb.from('normas').insert(rows);
+    if(error) {
+      console.error("Error saving normas:", error);
+      showToast('❌ Error al guardar las normas');
+    }
+  }
 }
 
