@@ -74,8 +74,12 @@ El administrador puede elegir cómo se bloquean los pronósticos:
 |---|---|
 | Frontend | HTML + CSS + JavaScript (vanilla) |
 | Base de datos | [Supabase](https://supabase.com) (PostgreSQL + Realtime) |
+| Resultados en vivo | [API-Football](https://www.api-football.com) |
+| Cron-job | Vercel Cron — cada 15 min durante el torneo |
 | Hosting | [Vercel](https://vercel.com) |
 | PWA | Service Worker + Web App Manifest |
+
+El cron-job consulta API-Football cada 15 minutos, compara con el estado guardado en Supabase y vuelca los resultados nuevos. Supabase Realtime propaga el cambio a todos los clientes conectados sin que nadie tenga que recargar.
 
 No hay framework, no hay bundler, no hay build step. Se sirve como estático.
 
