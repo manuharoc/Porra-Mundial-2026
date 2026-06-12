@@ -218,8 +218,9 @@ function renderPredInputsHtml(key){
 
   const glVal = isSaved ? saved.gl : '';
   const gvVal = isSaved ? saved.gv : '';
-  const disStr = (isMe && !isLocked) ? '' : ' disabled';
-  const btnHtml = (isMe && !isLocked) ? `<button class="pred-save ${isSaved?'saved':''}" id="psb_${key}" onclick="savePredGrupo('${key}')">✓</button>` : '';
+  const adminBypass = isAdmin();
+  const disStr = (isMe && (!isLocked || adminBypass)) ? '' : ' disabled';
+  const btnHtml = (isMe && (!isLocked || adminBypass)) ? `<button class="pred-save ${isSaved?'saved':''}" id="psb_${key}" onclick="savePredGrupo('${key}')">✓</button>` : '';
   return `<div class="pred-inputs">
     <input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_l" value="${glVal}" placeholder="–" oninput="checkPredChanged('${key}')"${disStr}>
     <span class="pred-sep">–</span>
@@ -820,7 +821,8 @@ function renderElimListView() {
       if (!isMe && !isLocked) {
          selectHtml = `<div style="font-size:12px;color:var(--text3);padding:8px 0;text-align:center">🔒 Oculto</div>`;
       } else {
-         const dStr = (isMe && !isLocked) ? '' : ' disabled';
+         const adminBypass = isAdmin();
+         const dStr = (isMe && (!isLocked || adminBypass)) ? '' : ' disabled';
          selectHtml = `
             <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" onchange="saveElimPredRow('${m.code}')"${dStr}>
               <option value="">— Ganador —</option>
@@ -900,7 +902,8 @@ function renderElimBracketView() {
               if (!isMe && !isLocked) {
                 return '<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px">🔒 Oculto</div>';
               }
-              const dStr = (isMe && !isLocked) ? '' : ' disabled';
+              const adminBypass = isAdmin();
+              const dStr = (isMe && (!isLocked || adminBypass)) ? '' : ' disabled';
               return `
                 <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" style="width:100%; font-size:12px; padding:4px;" onchange="saveElimPredRow('${m.code}')"${dStr}>
                   <option value="">— Seleccionar —</option>
