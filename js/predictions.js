@@ -209,7 +209,7 @@ function renderPredInputsHtml(key){
   if(!uid) return '<span style="font-size:11px;color:var(--text3)">Selecciona usuario</span>';
   const saved=((cache.predicciones[uid]||{}).grupos||{})[key];
   const isSaved=saved&&saved.gl!==''&&saved.gl!==undefined;
-  const isMe = (uid === getMyId() || isAdmin());
+  const isMe = uid === getMyId();
   const isLocked = getMatchLockStatusByKey(key, false);
 
   if (!isMe && !isLocked) {
@@ -218,9 +218,8 @@ function renderPredInputsHtml(key){
 
   const glVal = isSaved ? saved.gl : '';
   const gvVal = isSaved ? saved.gv : '';
-  const adminBypass = isAdmin();
-  const disStr = (isMe && (!isLocked || adminBypass)) ? '' : ' disabled';
-  const btnHtml = (isMe && (!isLocked || adminBypass)) ? `<button class="pred-save ${isSaved?'saved':''}" id="psb_${key}" onclick="savePredGrupo('${key}')">✓</button>` : '';
+  const disStr = (isMe && !isLocked) ? '' : ' disabled';
+  const btnHtml = (isMe && !isLocked) ? `<button class="pred-save ${isSaved?'saved':''}" id="psb_${key}" onclick="savePredGrupo('${key}')">✓</button>` : '';
   return `<div class="pred-inputs">
     <input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_l" value="${glVal}" placeholder="–" oninput="checkPredChanged('${key}')"${disStr}>
     <span class="pred-sep">–</span>
@@ -243,8 +242,8 @@ function fireConfetti() {
 async function savePredGrupo(key){
   const uid=currentViewUser;
   if(!uid){ showToast('Selecciona un participante primero'); return; }
-  if(uid !== getMyId() && !isAdmin()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
-  if(!isAdmin() && getMatchLockStatusByKey(key, false)) { showToast('❌ Este partido ya está bloqueado'); return; }
+  if(uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
+  if(getMatchLockStatusByKey(key, false)) { showToast('❌ Este partido ya está bloqueado'); return; }
   const l=document.getElementById('pi_'+key+'_l'), v=document.getElementById('pi_'+key+'_v');
   if(!l||!v||l.value===''||v.value===''){ showToast('Introduce el marcador'); return; }
   const gl=parseInt(l.value), gv=parseInt(v.value);
@@ -677,8 +676,8 @@ function updateWinnerDropdown(code) {
 async function saveElimPredRow(code) {
   const uid = currentViewUser;
   if (!uid) { showToast('Selecciona un participante primero'); return; }
-  if (uid !== getMyId() && !isAdmin()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
-  if (!isAdmin() && getMatchLockStatusByKey(code, true)) { showToast('❌ Este partido ya está bloqueado'); return; }
+  if (uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
+  if (getMatchLockStatusByKey(code, true)) { showToast('❌ Este partido ya está bloqueado'); return; }
 
   const localEl = document.getElementById('local-' + code);
   const visitanteEl = document.getElementById('visitante-' + code);
@@ -793,7 +792,7 @@ function renderElimListView() {
   const container = document.getElementById('elim-view-container');
   if (!container) return;
   const uid=currentViewUser;
-  const isMe = (uid === getMyId() || isAdmin());
+  const isMe = uid === getMyId();
   const disStr = isMe ? '' : ' disabled';
   let html='';
   
@@ -821,8 +820,7 @@ function renderElimListView() {
       if (!isMe && !isLocked) {
          selectHtml = `<div style="font-size:12px;color:var(--text3);padding:8px 0;text-align:center">🔒 Oculto</div>`;
       } else {
-         const adminBypass = isAdmin();
-         const dStr = (isMe && (!isLocked || adminBypass)) ? '' : ' disabled';
+         const dStr = (isMe && !isLocked) ? '' : ' disabled';
          selectHtml = `
             <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" onchange="saveElimPredRow('${m.code}')"${dStr}>
               <option value="">— Ganador —</option>
@@ -859,7 +857,7 @@ function renderElimBracketView() {
   const container = document.getElementById('elim-view-container');
   if (!container) return;
   const uid=currentViewUser;
-  const isMe = (uid === getMyId() || isAdmin());
+  const isMe = uid === getMyId();
   const disStr = isMe ? '' : ' disabled';
 
   let html = '<div class="bracket-wrapper"><div class="bracket-layout">';
@@ -902,8 +900,7 @@ function renderElimBracketView() {
               if (!isMe && !isLocked) {
                 return '<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px">🔒 Oculto</div>';
               }
-              const adminBypass = isAdmin();
-              const dStr = (isMe && (!isLocked || adminBypass)) ? '' : ' disabled';
+              const dStr = (isMe && !isLocked) ? '' : ' disabled';
               return `
                 <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" style="width:100%; font-size:12px; padding:4px;" onchange="saveElimPredRow('${m.code}')"${dStr}>
                   <option value="">— Seleccionar —</option>
@@ -950,7 +947,7 @@ function renderEspeciales(){
 
   // Render bonus panel (visible for all)
   renderBonusAciertosPanel();
-  const isMe = (uid === getMyId() || isAdmin());
+  const isMe = uid === getMyId();
   const disStr = isMe ? '' : ' disabled';
 
   ['select-campeon','select-subcampeon','input-pichichi','input-pichichiEspana','select-tercero','select-mas-goles','select-mas-tarjetas'].forEach(id => {
@@ -1023,7 +1020,7 @@ function renderSpecialTimestamp(key, isoStr){
 async function saveSpecial(type, value){
   const uid=currentViewUser;
   if(!uid){ showToast('Selecciona un participante primero'); return; }
-  if(uid !== getMyId() && !isAdmin()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
+  if(uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
   if(!value) return;
   if(!cache.predicciones[uid]) cache.predicciones[uid]={grupos:{},elim:{},especiales:{},especialesTs:{}};
   const isNew=!cache.predicciones[uid].especiales[type];
