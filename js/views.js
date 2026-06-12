@@ -78,14 +78,26 @@ function renderInsights() {
   const now = new Date().getTime();
   let nextMatch = null;
   
+  // Find in Groups
   for(const g of GRUPOS) {
     for(const m of g.partidos) {
-      const key = `G${g.id}_${m.n}`;
-      const res = (cache.resultados.grupos || {})[key];
-      if (!res || res.gl === '' || res.gl === undefined) {
-        const mTime = parseMatchTime(m.fecha, m.hora);
+      const mTime = parseMatchTime(m.fecha, m.hora);
+      // Keep showing it up to 2.5 hours after start
+      if(mTime >= now - 9000000) {
         if(!nextMatch || mTime < nextMatch.time) {
-          nextMatch = { ...m, key, time: mTime, type: 'grupo' };
+          nextMatch = { ...m, key: `G${g.id}_${m.n}`, time: mTime, isElim: false };
+        }
+      }
+    }
+  }
+
+  // Find in Elim
+  for(const phase of ELIM_PHASES) {
+    for(const m of phase.partidos) {
+      const mTime = parseMatchTime(m.fecha, m.hora);
+      if(mTime >= now - 9000000) {
+        if(!nextMatch || mTime < nextMatch.time) {
+          nextMatch = { ...m, key: m.code, time: mTime, isElim: true };
         }
       }
     }
@@ -93,15 +105,31 @@ function renderInsights() {
 
   let nextMatchHtml = '<div class="stat-sub">Sin partidos próximos</div>';
   if (nextMatch) {
+    let localName = nextMatch.isElim ? (resolveTeamForSlot(nextMatch.local, null) || nextMatch.local) : nextMatch.local;
+    let visitName = nextMatch.isElim ? (resolveTeamForSlot(nextMatch.visitante, null) || nextMatch.visitante) : nextMatch.visitante;
+
     let localW = 0, draw = 0, visitW = 0, totalP = 0;
     Object.values(cache.predicciones).forEach(p => {
-      if(p.grupos && p.grupos[nextMatch.key]) {
-        const pred = p.grupos[nextMatch.key];
-        if(pred.gl !== '' && pred.gv !== '' && pred.gl !== undefined) {
-          totalP++;
-          if (parseInt(pred.gl) > parseInt(pred.gv)) localW++;
-          else if (parseInt(pred.gl) < parseInt(pred.gv)) visitW++;
-          else draw++;
+      if (!nextMatch.isElim) {
+        if(p.grupos && p.grupos[nextMatch.key]) {
+          const pred = p.grupos[nextMatch.key];
+          if(pred.gl !== '' && pred.gv !== '' && pred.gl !== undefined) {
+            totalP++;
+            if (parseInt(pred.gl) > parseInt(pred.gv)) localW++;
+            else if (parseInt(pred.gl) < parseInt(pred.gv)) visitW++;
+            else draw++;
+          }
+        }
+      } else {
+        if(p.elim && p.elim[nextMatch.key]) {
+          const pred = p.elim[nextMatch.key];
+          let winner = pred;
+          try { if(winner.startsWith('{')) winner = JSON.parse(winner).ganador; } catch(e){}
+          if (winner) {
+            totalP++;
+            if (winner === localName) localW++;
+            else if (winner === visitName) visitW++;
+          }
         }
       }
     });
@@ -110,19 +138,35 @@ function renderInsights() {
       const pL = Math.round((localW/totalP)*100);
       const pE = Math.round((draw/totalP)*100);
       const pV = Math.round((visitW/totalP)*100);
+      let barHtml = nextMatch.isElim ? 
+        `<div style="display:flex;height:6px;width:100%;background:var(--s4);border-radius:3px;overflow:hidden;margin-bottom:4px;">
+           <div style="width:${pL}%;background:var(--green)"></div>
+           <div style="width:${pV}%;background:var(--red)"></div>
+         </div>
+         <span style="color:var(--green)">${pL}%</span> - <span style="color:var(--red)">${pV}%</span>` :
+        `<div style="display:flex;height:6px;width:100%;background:var(--s4);border-radius:3px;overflow:hidden;margin-bottom:4px;">
+           <div style="width:${pL}%;background:var(--green)"></div>
+           <div style="width:${pE}%;background:var(--text3)"></div>
+           <div style="width:${pV}%;background:var(--red)"></div>
+         </div>
+         <span style="color:var(--green)">${pL}%</span> - <span style="color:var(--text3)">${pE}%</span> - <span style="color:var(--red)">${pV}%</span>`;
+
       nextMatchHtml = `
-        <div class="stat-val" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nextMatch.local} vs ${nextMatch.visitante}</div>
+        <div class="stat-val" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          <span style="font-size:10px;color:var(--text3);margin-right:6px">${nextMatch.hora}</span>
+          ${localName} vs ${visitName}
+        </div>
         <div class="stat-sub" style="margin-top:4px;">
-          <div style="display:flex;height:6px;width:100%;background:var(--s4);border-radius:3px;overflow:hidden;margin-bottom:4px;">
-            <div style="width:${pL}%;background:var(--green)"></div>
-            <div style="width:${pE}%;background:var(--text3)"></div>
-            <div style="width:${pV}%;background:var(--red)"></div>
-          </div>
-          <span style="color:var(--green)">${pL}%</span> - <span style="color:var(--text3)">${pE}%</span> - <span style="color:var(--red)">${pV}%</span>
+          ${barHtml}
         </div>
       `;
     } else {
-      nextMatchHtml = `<div class="stat-val" style="font-size:14px">${nextMatch.local} vs ${nextMatch.visitante}</div><div class="stat-sub">Nadie ha predicho aún</div>`;
+      nextMatchHtml = `
+        <div class="stat-val" style="font-size:14px">
+          <span style="font-size:10px;color:var(--text3);margin-right:6px">${nextMatch.hora}</span>
+          ${localName} vs ${visitName}
+        </div>
+        <div class="stat-sub">Nadie ha predicho aún</div>`;
     }
   }
 
