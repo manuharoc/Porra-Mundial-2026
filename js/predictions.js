@@ -922,7 +922,7 @@ function renderElimBracketView() {
 }
 
 // ===================== ESPECIALES =====================
-const TORNEO_START = new Date('2026-06-11T19:00:00Z');
+const TORNEO_START = new Date('2026-06-14T21:59:59Z'); // Domingo 14 de junio 23:59 ESP
 
 function renderEspeciales(){
   document.getElementById('pred-user-selector-esp').innerHTML=renderUserSelector('switchPredUserEsp');
