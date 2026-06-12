@@ -11,6 +11,7 @@ const TEAM_MAP = {
   "Switzerland": "Suiza",
   "Qatar": "Qatar",
   "Bosnia and Herzegovina": "Bosnia",
+  "Bosnia & Herzegovina": "Bosnia",
   "Bosnia": "Bosnia",
   "Brazil": "Brasil",
   "Morocco": "Marruecos",
@@ -103,11 +104,12 @@ module.exports = async (req, res) => {
     
     let GRUPOS = [];
     try {
-      const vm = require('vm');
-      const sandbox = { Math, Date, String, Number, Array, Object };
-      vm.createContext(sandbox);
-      vm.runInContext(dataStr.replace(/const\s+GRUPOS\s*=/, 'var GRUPOS_OUT ='), sandbox);
-      GRUPOS = sandbox.GRUPOS_OUT || [];
+      const match = dataStr.match(/const\s+GRUPOS\s*=\s*(\[\s*\{[\s\S]*?\]);\s*const\s+ELIM_PHASES/);
+      if (match) {
+        GRUPOS = eval(match[1]);
+      } else {
+        console.error("Regex did not match GRUPOS in data.js");
+      }
     } catch(err) {
       console.error("Error parsing GRUPOS from data.js", err);
     }
