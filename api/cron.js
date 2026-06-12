@@ -98,23 +98,25 @@ module.exports = async (req, res) => {
     const allMatches = allMatchesRaw.filter(m => m.league && m.league.id === 1);
     const apiData = { response: allMatches, raw_debug: { today: dataToday, yesterday: dataYesterday } };
 
+    let updatesCount = 0;
+    let matchDebug = [];
+    let gruposExtractError = "";
+    
     // 2. Read local data.js to get GRUPOS
     const dataJsPath = path.join(process.cwd(), 'data.js');
     const dataStr = fs.readFileSync(dataJsPath, 'utf8');
     
     let GRUPOS = [];
     try {
-      const match = dataStr.match(/const\s+GRUPOS\s*=\s*(\[\s*\{[\s\S]*?\]);\s*const\s+ELIM_PHASES/);
+      const match = dataStr.match(/const\s+GRUPOS\s*=\s*(\[\s*\{[\s\S]*?\]);\s*const\s+/);
       if (match) {
         GRUPOS = eval(match[1]);
       } else {
-        console.error("Regex did not match GRUPOS in data.js");
+        gruposExtractError = "Regex did not match GRUPOS in data.js. Start of file: " + dataStr.substring(0, 200);
       }
     } catch(err) {
-      console.error("Error parsing GRUPOS from data.js", err);
+      gruposExtractError = "Error evaluating GRUPOS: " + err.message;
     }
-
-    let updatesCount = 0;
 
     for (const match of apiData.response) {
       const status = match.fixture.status.short;
@@ -136,16 +138,28 @@ module.exports = async (req, res) => {
 
       // Find match_key
       let matchKey = null;
+      let checkLog = [];
       for (const g of GRUPOS) {
         if (!g.partidos) continue;
         for (const p of g.partidos) {
-          if (normalizeName(p.local) === normalizeName(homeEs) && normalizeName(p.visitante) === normalizeName(awayEs)) {
+          const l1 = normalizeName(p.local);
+          const l2 = normalizeName(homeEs);
+          const v1 = normalizeName(p.visitante);
+          const v2 = normalizeName(awayEs);
+          if (l1 === l2 && v1 === v2) {
             matchKey = `G${g.id}_${p.n}`;
             break;
           }
         }
         if (matchKey) break;
       }
+
+      matchDebug.push({
+        homeEng: homeTeamEng, awayEng: awayTeamEng,
+        homeEs: homeEs, awayEs: awayEs,
+        homeNorm: normalizeName(homeEs), awayNorm: normalizeName(awayEs),
+        matchKey: matchKey, status: status
+      });
 
       if (matchKey) {
         // Upsert to Supabase
@@ -174,7 +188,11 @@ module.exports = async (req, res) => {
     return res.status(200).json({ 
       success: true, 
       updates: updatesCount,
-      debug: apiData
+      debug: {
+        gruposLength: GRUPOS.length,
+        gruposError: gruposExtractError,
+        matches: matchDebug
+      }
     });
   } catch (error) {
     console.error(error);
