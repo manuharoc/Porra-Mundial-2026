@@ -7,6 +7,7 @@ const TEAM_MAP = {
   "South Africa": "Sudáfrica",
   "South Korea": "Corea del Sur",
   "Czech Republic": "República Checa",
+  "Czechia": "República Checa",
   "Canada": "Canadá",
   "Switzerland": "Suiza",
   "Qatar": "Qatar",
