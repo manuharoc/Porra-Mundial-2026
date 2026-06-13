@@ -26,7 +26,7 @@ const GRUPOS = [
   ]},
   {id:'D',equipos:['Estados Unidos','Paraguay','Australia','Turquía'],partidos:[
     {n:1,fecha:'13 jun',hora:'03:00*',local:'Estados Unidos',visitante:'Paraguay',sede:'SoFi, Los Ángeles'},
-    {n:2,fecha:'13 jun',hora:'06:00*',local:'Australia',visitante:'Turquía',sede:'BC Place, Vancouver'},
+    {n:2,fecha:'14 jun',hora:'06:00*',local:'Australia',visitante:'Turquía',sede:'BC Place, Vancouver'},
     {n:3,fecha:'19 jun',hora:'21:00',local:'Estados Unidos',visitante:'Australia',sede:'Lumen Field, Seattle'},
     {n:4,fecha:'20 jun',hora:'06:00*',local:'Turquía',visitante:'Paraguay',sede:"Levi's, Santa Clara"},
     {n:5,fecha:'26 jun',hora:'04:00*',local:'Turquía',visitante:'Estados Unidos',sede:'AT&T, Dallas'},
