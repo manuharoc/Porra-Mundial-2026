@@ -164,7 +164,7 @@ module.exports = async (req, res) => {
 
       if (matchKey) {
         // Upsert to Supabase
-        const upsertUrl = `${SUPABASE_URL}/rest/v1/resultados_globales`;
+        const upsertUrl = `${SUPABASE_URL}/rest/v1/resultados_globales?on_conflict=tipo,match_key`;
         const payload = {
           tipo: 'grupos',
           match_key: matchKey,
@@ -172,7 +172,7 @@ module.exports = async (req, res) => {
           updated_at: new Date().toISOString()
         };
 
-        await fetch(upsertUrl, {
+        const res = await fetch(upsertUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -182,7 +182,13 @@ module.exports = async (req, res) => {
           },
           body: JSON.stringify(payload)
         });
-        updatesCount++;
+        
+        if (!res.ok) {
+           const errText = await res.text();
+           console.error("Supabase error for", matchKey, errText);
+        } else {
+           updatesCount++;
+        }
       }
     }
 
