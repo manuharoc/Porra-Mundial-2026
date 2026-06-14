@@ -22,6 +22,7 @@ const TEAM_MAP = {
   "Paraguay": "Paraguay",
   "Australia": "Australia",
   "Turkey": "Turquía",
+  "Türkiye": "Turquía",
   "Germany": "Alemania",
   "Curacao": "Curazao",
   "Ivory Coast": "Costa de Marfil",
