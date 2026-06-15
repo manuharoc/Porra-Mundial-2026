@@ -103,6 +103,8 @@ module.exports = async (req, res) => {
     // Filter locally to only include World Cup matches (league id 1)
     const allMatchesRaw = [...(dataYesterday.response || []), ...(dataToday.response || [])];
     const allMatches = allMatchesRaw.filter(m => m.league && m.league.id === 1);
+    const rawLeagues = [...new Set(allMatchesRaw.map(m => m.league?.id))];
+    const rawMatchesLength = allMatchesRaw.length;
     const apiData = { response: allMatches, raw_debug: { today: dataToday, yesterday: dataYesterday } };
 
     let updatesCount = 0;
@@ -204,7 +206,9 @@ module.exports = async (req, res) => {
       debug: {
         gruposLength: GRUPOS.length,
         gruposError: gruposExtractError,
-        matches: matchDebug
+        matches: matchDebug,
+        rawMatchesLength: rawMatchesLength,
+        rawLeagues: rawLeagues
       }
     });
   } catch (error) {
