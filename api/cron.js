@@ -91,30 +91,33 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: "Missing environment variables" });
     }
 
-    // 1. Fetch matches from football-data.org for yesterday and today
+    // 1. Fetch matches from API-Football for yesterday and today (bypasses Free tier season restriction)
     const today = new Date();
     const isoToday = today.toISOString().split('T')[0];
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const isoYesterday = yesterday.toISOString().split('T')[0];
 
-    // Use the same API_FOOTBALL_KEY env variable for the new football-data.org token to avoid changing Vercel config
-    const headers = { 'X-Auth-Token': API_FOOTBALL_KEY };
+    const headers = { 'x-apisports-key': API_FOOTBALL_KEY };
     
-    // Fetch both days in a single API call to save requests
-    const resMatches = await fetch(`https://api.football-data.org/v4/matches?dateFrom=${isoYesterday}&dateTo=${isoToday}`, { headers });
-    const dataMatches = await resMatches.json();
+    // Fetch Today
+    const resToday = await fetch(`https://v3.football.api-sports.io/fixtures?date=${isoToday}`, { headers });
+    const dataToday = await resToday.json();
+    
+    // Fetch Yesterday
+    const resYesterday = await fetch(`https://v3.football.api-sports.io/fixtures?date=${isoYesterday}`, { headers });
+    const dataYesterday = await resYesterday.json();
 
-    if (!dataMatches || dataMatches.errorCode) {
-      return res.status(500).json({ error: "Invalid football-data response", data: dataMatches });
+    if (!dataToday || !dataYesterday) {
+      return res.status(500).json({ error: "Invalid API-Football response", today: dataToday, yesterday: dataYesterday });
     }
 
-    // Filter locally to only include World Cup matches (competition id 2000)
-    const allMatchesRaw = dataMatches.matches || [];
-    const allMatches = allMatchesRaw.filter(m => m.competition && m.competition.id === 2000);
-    const rawLeagues = [...new Set(allMatchesRaw.map(m => m.competition?.id))];
+    // Filter locally to only include World Cup matches (league id 1)
+    const allMatchesRaw = [...(dataYesterday.response || []), ...(dataToday.response || [])];
+    const allMatches = allMatchesRaw.filter(m => m.league && m.league.id === 1);
+    const rawLeagues = [...new Set(allMatchesRaw.map(m => m.league?.id))];
     const rawMatchesLength = allMatchesRaw.length;
-    const apiData = { response: allMatches, raw_debug: { data: dataMatches } };
+    const apiData = { response: allMatches, raw_debug: { today: dataToday, yesterday: dataYesterday } };
 
     let updatesCount = 0;
     let matchDebug = [];
@@ -137,15 +140,14 @@ module.exports = async (req, res) => {
     }
 
     for (const match of apiData.response) {
-      const status = match.status;
+      const status = match.fixture.status.short;
       // Skip matches that haven't started or are cancelled
-      if (['SCHEDULED', 'TIMED', 'POSTPONED', 'CANCELLED', 'SUSPENDED'].includes(status)) continue;
+      if (['NS', 'PST', 'CAN', 'ABD'].includes(status)) continue;
 
-      let homeTeamEng = match.homeTeam.name;
-      let awayTeamEng = match.awayTeam.name;
-      
-      let goalsHome = match.score?.fullTime?.home ?? match.score?.regularTime?.home ?? 0;
-      let goalsAway = match.score?.fullTime?.away ?? match.score?.regularTime?.away ?? 0;
+      let homeTeamEng = match.teams.home.name;
+      let awayTeamEng = match.teams.away.name;
+      let goalsHome = match.goals.home;
+      let goalsAway = match.goals.away;
 
       if (goalsHome === null || goalsAway === null) {
           goalsHome = 0;
@@ -219,7 +221,7 @@ module.exports = async (req, res) => {
         matches: matchDebug,
         rawMatchesLength: rawMatchesLength,
         rawLeagues: rawLeagues,
-        apiErrors: dataMatches.errorCode ? dataMatches : null
+        apiErrors: { today: dataToday.errors, yesterday: dataYesterday.errors }
       }
     });
   } catch (error) {
