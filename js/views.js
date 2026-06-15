@@ -280,18 +280,63 @@ function renderCalendar(dateStr) {
       const localFlag = ALL_TEAMS.includes(m.local) ? getFlagHtml(m.local) : '';
       const visitanteFlag = ALL_TEAMS.includes(m.visitante) ? getFlagHtml(m.visitante) : '';
       
-      html += `
-        <div class="cal-match-row">
-          <div class="cal-match-info">
-            <div class="cal-match-time">${m.stage} · ${m.hora}</div>
-            <div class="cal-match-teams">
-              <span>${localFlag}${m.local}</span> 
-              <span style="color:var(--text3);font-size:10px;margin:0 4px">—</span> 
-              <span>${visitanteFlag}${m.visitante}</span>
+      let predsHtml = '';
+      if (cache.participantes.length > 0) {
+        let itemsHtml = '';
+        cache.participantes.forEach(p => {
+          let predVal = null;
+          const userPreds = cache.predicciones[p.id] || {};
+          
+          if (!m.isElim) {
+            const pGroup = userPreds.grupos?.[m.key];
+            if (pGroup && pGroup.gl !== '' && pGroup.gv !== '' && pGroup.gl !== undefined) {
+              predVal = `<span style="font-weight:700">${pGroup.gl} - ${pGroup.gv}</span>`;
+            }
+          } else {
+            const pElim = userPreds.elim?.[m.key];
+            if (pElim) {
+               let winner = pElim;
+               try { if (winner.startsWith('{')) winner = JSON.parse(winner).ganador; } catch(e){}
+               if (winner) {
+                  predVal = `<span style="font-weight:600">${ALL_TEAMS.includes(winner) ? getFlagHtml(winner) : ''}${winner}</span>`;
+               }
+            }
+          }
+          
+          if (predVal) {
+             itemsHtml += `
+               <div style="display:inline-flex; align-items:center; gap:6px; background:var(--s2); border:1px solid var(--border2); padding:4px 8px; border-radius:12px; flex-shrink:0;">
+                 ${renderAvatarHtml(p, 'sm')}
+                 <span style="font-size:12px; color:var(--text); white-space:nowrap;">${predVal}</span>
+               </div>
+             `;
+          }
+        });
+        
+        if (itemsHtml !== '') {
+          predsHtml = `
+            <div style="display:flex; flex-wrap:nowrap; overflow-x:auto; gap:8px; padding:8px 16px; background:var(--s1); border-top:1px solid var(--border2); scrollbar-width:none; -ms-overflow-style:none;">
+              ${itemsHtml}
             </div>
-            <div style="font-size:10px;color:var(--text3);margin-top:4px">${m.sede}</div>
+          `;
+        }
+      }
+      
+      html += `
+        <div style="background:var(--s2); border:1px solid var(--border2); border-radius:var(--r-lg); margin-bottom:12px; overflow:hidden;">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px;">
+            <div class="cal-match-info">
+              <div class="cal-match-time">${m.stage} · ${m.hora}</div>
+              <div class="cal-match-teams">
+                <span>${localFlag}${m.local}</span> 
+                <span style="color:var(--text3);font-size:10px;margin:0 4px">—</span> 
+                <span>${visitanteFlag}${m.visitante}</span>
+              </div>
+              <div style="font-size:10px;color:var(--text3);margin-top:4px">${m.sede}</div>
+            </div>
+            ${resHtml}
           </div>
-          ${resHtml}
+          ${predsHtml}
         </div>
       `;
     });
