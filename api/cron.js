@@ -208,7 +208,8 @@ module.exports = async (req, res) => {
         gruposError: gruposExtractError,
         matches: matchDebug,
         rawMatchesLength: rawMatchesLength,
-        rawLeagues: rawLeagues
+        rawLeagues: rawLeagues,
+        apiErrors: { today: dataToday.errors, yesterday: dataYesterday.errors }
       }
     });
   } catch (error) {
