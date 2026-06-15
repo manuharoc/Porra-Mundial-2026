@@ -75,12 +75,15 @@ module.exports = async (req, res) => {
     const utcHour = now.getUTCHours();
     
     // Pausa el cron entre las 09:00 y las 15:00 CEST (07:00 - 13:00 UTC)
+    // TEMPORALMENTE COMENTADO PARA PRUEBAS
+    /*
     if (utcHour >= 7 && utcHour < 13) {
       return res.status(200).json({
         success: true,
         message: "Cron pausado por horario (09:00 - 15:00 CEST) para ahorrar peticiones a la API."
       });
     }
+    */
 
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
