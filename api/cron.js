@@ -85,39 +85,25 @@ module.exports = async (req, res) => {
 
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const API_FOOTBALL_KEY = process.env.API_FOOTBALL_KEY;
-
-    if (!SUPABASE_URL || !SUPABASE_KEY || !API_FOOTBALL_KEY) {
-      return res.status(500).json({ error: "Missing environment variables" });
-    }
-
-    // 1. Fetch matches from API-Football for yesterday and today (bypasses Free tier season restriction)
+    // 1. Fetch matches from ESPN API for yesterday and today
     const today = new Date();
-    const isoToday = today.toISOString().split('T')[0];
+    const isoToday = today.toISOString().split('T')[0].replace(/-/g, '');
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    const isoYesterday = yesterday.toISOString().split('T')[0];
+    const isoYesterday = yesterday.toISOString().split('T')[0].replace(/-/g, '');
 
-    const headers = { 'x-apisports-key': API_FOOTBALL_KEY };
-    
-    // Fetch Today
-    const resToday = await fetch(`https://v3.football.api-sports.io/fixtures?date=${isoToday}`, { headers });
-    const dataToday = await resToday.json();
-    
-    // Fetch Yesterday
-    const resYesterday = await fetch(`https://v3.football.api-sports.io/fixtures?date=${isoYesterday}`, { headers });
-    const dataYesterday = await resYesterday.json();
+    // Fetch from ESPN Scoreboard API
+    const url = `http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${isoYesterday}-${isoToday}`;
+    const resMatches = await fetch(url);
+    const dataMatches = await resMatches.json();
 
-    if (!dataToday || !dataYesterday) {
-      return res.status(500).json({ error: "Invalid API-Football response", today: dataToday, yesterday: dataYesterday });
+    if (!dataMatches || !dataMatches.events) {
+      return res.status(500).json({ error: "Invalid ESPN response", data: dataMatches });
     }
 
-    // Filter locally to only include World Cup matches (league id 1)
-    const allMatchesRaw = [...(dataYesterday.response || []), ...(dataToday.response || [])];
-    const allMatches = allMatchesRaw.filter(m => m.league && m.league.id === 1);
-    const rawLeagues = [...new Set(allMatchesRaw.map(m => m.league?.id))];
-    const rawMatchesLength = allMatchesRaw.length;
-    const apiData = { response: allMatches, raw_debug: { today: dataToday, yesterday: dataYesterday } };
+    const allMatches = dataMatches.events;
+    const rawMatchesLength = allMatches.length;
+    const apiData = { response: allMatches, raw_debug: { data: dataMatches } };
 
     let updatesCount = 0;
     let matchDebug = [];
@@ -140,19 +126,17 @@ module.exports = async (req, res) => {
     }
 
     for (const match of apiData.response) {
-      const status = match.fixture.status.short;
-      // Skip matches that haven't started or are cancelled
-      if (['NS', 'PST', 'CAN', 'ABD'].includes(status)) continue;
+      const statusState = match.status.type.state;
+      // Skip matches that haven't started (pre)
+      if (statusState === 'pre') continue;
 
-      let homeTeamEng = match.teams.home.name;
-      let awayTeamEng = match.teams.away.name;
-      let goalsHome = match.goals.home;
-      let goalsAway = match.goals.away;
+      const homeComp = match.competitions[0].competitors.find(c => c.homeAway === 'home');
+      const awayComp = match.competitions[0].competitors.find(c => c.homeAway === 'away');
 
-      if (goalsHome === null || goalsAway === null) {
-          goalsHome = 0;
-          goalsAway = 0;
-      }
+      let homeTeamEng = homeComp.team.displayName;
+      let awayTeamEng = awayComp.team.displayName;
+      let goalsHome = homeComp.score || "0";
+      let goalsAway = awayComp.score || "0";
 
       const homeEs = TEAM_MAP[homeTeamEng] || homeTeamEng;
       const awayEs = TEAM_MAP[awayTeamEng] || awayTeamEng;
@@ -179,7 +163,7 @@ module.exports = async (req, res) => {
         homeEng: homeTeamEng, awayEng: awayTeamEng,
         homeEs: homeEs, awayEs: awayEs,
         homeNorm: normalizeName(homeEs), awayNorm: normalizeName(awayEs),
-        matchKey: matchKey, status: status
+        matchKey: matchKey, status: match.status.type.shortDetail
       });
 
       if (matchKey) {
@@ -220,8 +204,7 @@ module.exports = async (req, res) => {
         gruposError: gruposExtractError,
         matches: matchDebug,
         rawMatchesLength: rawMatchesLength,
-        rawLeagues: rawLeagues,
-        apiErrors: { today: dataToday.errors, yesterday: dataYesterday.errors }
+        apiErrors: null
       }
     });
   } catch (error) {
