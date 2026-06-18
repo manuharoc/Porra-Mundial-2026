@@ -19,7 +19,7 @@ const GRUPOS = [
   {id:'C',equipos:['Brasil','Marruecos','Haití','Escocia'],partidos:[
     {n:1,fecha:'14 jun',hora:'00:00*',local:'Brasil',visitante:'Marruecos',sede:'MetLife, Nueva Jersey'},
     {n:2,fecha:'14 jun',hora:'03:00*',local:'Haití',visitante:'Escocia',sede:'Gillette, Boston'},
-    {n:3,fecha:'19 jun',hora:'00:00*',local:'Escocia',visitante:'Marruecos',sede:'Gillette, Boston'},
+    {n:3,fecha:'20 jun',hora:'00:00*',local:'Escocia',visitante:'Marruecos',sede:'Gillette, Boston'},
     {n:4,fecha:'20 jun',hora:'03:00*',local:'Brasil',visitante:'Haití',sede:'Lincoln, Filadelfia'},
     {n:5,fecha:'25 jun',hora:'00:00*',local:'Escocia',visitante:'Brasil',sede:'Gillette, Boston'},
     {n:6,fecha:'25 jun',hora:'00:00*',local:'Marruecos',visitante:'Haití',sede:'Gillette, Boston'}
