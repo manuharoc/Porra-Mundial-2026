@@ -20,7 +20,7 @@ const GRUPOS = [
     {n:1,fecha:'14 jun',hora:'00:00*',local:'Brasil',visitante:'Marruecos',sede:'MetLife, Nueva Jersey'},
     {n:2,fecha:'14 jun',hora:'03:00*',local:'Haití',visitante:'Escocia',sede:'Gillette, Boston'},
     {n:3,fecha:'20 jun',hora:'00:00*',local:'Escocia',visitante:'Marruecos',sede:'Gillette, Boston'},
-    {n:4,fecha:'20 jun',hora:'03:00*',local:'Brasil',visitante:'Haití',sede:'Lincoln, Filadelfia'},
+    {n:4,fecha:'20 jun',hora:'02:30*',local:'Brasil',visitante:'Haití',sede:'Lincoln, Filadelfia'},
     {n:5,fecha:'25 jun',hora:'00:00*',local:'Escocia',visitante:'Brasil',sede:'Gillette, Boston'},
     {n:6,fecha:'25 jun',hora:'00:00*',local:'Marruecos',visitante:'Haití',sede:'Gillette, Boston'}
   ]},
@@ -28,7 +28,7 @@ const GRUPOS = [
     {n:1,fecha:'13 jun',hora:'03:00*',local:'Estados Unidos',visitante:'Paraguay',sede:'SoFi, Los Ángeles'},
     {n:2,fecha:'14 jun',hora:'06:00*',local:'Australia',visitante:'Turquía',sede:'BC Place, Vancouver'},
     {n:3,fecha:'19 jun',hora:'21:00',local:'Estados Unidos',visitante:'Australia',sede:'Lumen Field, Seattle'},
-    {n:4,fecha:'20 jun',hora:'06:00*',local:'Turquía',visitante:'Paraguay',sede:"Levi's, Santa Clara"},
+    {n:4,fecha:'20 jun',hora:'05:00*',local:'Turquía',visitante:'Paraguay',sede:"Levi's, Santa Clara"},
     {n:5,fecha:'26 jun',hora:'04:00*',local:'Turquía',visitante:'Estados Unidos',sede:'AT&T, Dallas'},
     {n:6,fecha:'26 jun',hora:'04:00*',local:'Paraguay',visitante:'Australia',sede:'AT&T, Dallas'}
   ]},
@@ -37,14 +37,14 @@ const GRUPOS = [
     {n:2,fecha:'15 jun',hora:'01:00*',local:'Costa de Marfil',visitante:'Ecuador',sede:'Lincoln, Filadelfia'},
     {n:3,fecha:'20 jun',hora:'22:00',local:'Alemania',visitante:'Costa de Marfil',sede:'BMO Field, Toronto'},
     {n:4,fecha:'21 jun',hora:'02:00*',local:'Ecuador',visitante:'Curazao',sede:'Arrowhead, Kansas City'},
-    {n:5,fecha:'26 jun',hora:'22:00',local:'Ecuador',visitante:'Alemania',sede:'AT&T, Dallas'},
-    {n:6,fecha:'26 jun',hora:'22:00',local:'Curazao',visitante:'Costa de Marfil',sede:'AT&T, Dallas'}
+    {n:5,fecha:'25 jun',hora:'22:00',local:'Ecuador',visitante:'Alemania',sede:'AT&T, Dallas'},
+    {n:6,fecha:'25 jun',hora:'22:00',local:'Curazao',visitante:'Costa de Marfil',sede:'AT&T, Dallas'}
   ]},
   {id:'F',equipos:['Holanda','Japón','Túnez','Suecia'],partidos:[
     {n:1,fecha:'14 jun',hora:'22:00',local:'Holanda',visitante:'Japón',sede:'AT&T, Dallas'},
     {n:2,fecha:'15 jun',hora:'04:00*',local:'Suecia',visitante:'Túnez',sede:'BBVA, Monterrey'},
     {n:3,fecha:'20 jun',hora:'19:00',local:'Holanda',visitante:'Suecia',sede:'NRG, Houston'},
-    {n:4,fecha:'20 jun',hora:'06:00*',local:'Túnez',visitante:'Japón',sede:'BBVA, Monterrey'},
+    {n:4,fecha:'21 jun',hora:'06:00*',local:'Túnez',visitante:'Japón',sede:'BBVA, Monterrey'},
     {n:5,fecha:'26 jun',hora:'01:00*',local:'Japón',visitante:'Suecia',sede:'SoFi, Los Ángeles'},
     {n:6,fecha:'26 jun',hora:'01:00*',local:'Túnez',visitante:'Holanda',sede:'SoFi, Los Ángeles'}
   ]},
@@ -52,49 +52,49 @@ const GRUPOS = [
     {n:1,fecha:'15 jun',hora:'21:00',local:'Bélgica',visitante:'Egipto',sede:'Lumen Field, Seattle'},
     {n:2,fecha:'16 jun',hora:'03:00*',local:'Irán',visitante:'Nueva Zelanda',sede:'SoFi, Los Ángeles'},
     {n:3,fecha:'21 jun',hora:'21:00',local:'Bélgica',visitante:'Irán',sede:'Lincoln, Filadelfia'},
-    {n:4,fecha:'22 jun',hora:'00:00*',local:'Nueva Zelanda',visitante:'Egipto',sede:'Lincoln, Filadelfia'},
-    {n:5,fecha:'26 jun',hora:'01:00*',local:'Nueva Zelanda',visitante:'Bélgica',sede:'Gillette, Boston'},
-    {n:6,fecha:'26 jun',hora:'01:00*',local:'Egipto',visitante:'Irán',sede:'Gillette, Boston'}
+    {n:4,fecha:'22 jun',hora:'03:00*',local:'Nueva Zelanda',visitante:'Egipto',sede:'Lincoln, Filadelfia'},
+    {n:5,fecha:'27 jun',hora:'05:00*',local:'Nueva Zelanda',visitante:'Bélgica',sede:'Gillette, Boston'},
+    {n:6,fecha:'27 jun',hora:'05:00*',local:'Egipto',visitante:'Irán',sede:'Gillette, Boston'}
   ]},
   {id:'H',equipos:['España','Cabo Verde','Arabia Saudí','Uruguay'],partidos:[
     {n:1,fecha:'15 jun',hora:'18:00',local:'España',visitante:'Cabo Verde',sede:'Mercedes-Benz, Atlanta'},
     {n:2,fecha:'16 jun',hora:'00:00*',local:'Arabia Saudí',visitante:'Uruguay',sede:'Hard Rock, Miami'},
-    {n:3,fecha:'21 jun',hora:'22:00',local:'España',visitante:'Arabia Saudí',sede:'MetLife, Nueva Jersey'},
+    {n:3,fecha:'21 jun',hora:'18:00',local:'España',visitante:'Arabia Saudí',sede:'MetLife, Nueva Jersey'},
     {n:4,fecha:'22 jun',hora:'00:00*',local:'Uruguay',visitante:'Cabo Verde',sede:'MetLife, Nueva Jersey'},
-    {n:5,fecha:'26 jun',hora:'03:00*',local:'Uruguay',visitante:'España',sede:'SoFi, Los Ángeles'},
-    {n:6,fecha:'26 jun',hora:'03:00*',local:'Cabo Verde',visitante:'Arabia Saudí',sede:'SoFi, Los Ángeles'}
+    {n:5,fecha:'27 jun',hora:'02:00*',local:'Uruguay',visitante:'España',sede:'SoFi, Los Ángeles'},
+    {n:6,fecha:'27 jun',hora:'02:00*',local:'Cabo Verde',visitante:'Arabia Saudí',sede:'SoFi, Los Ángeles'}
   ]},
   {id:'I',equipos:['Francia','Senegal','Noruega','Irak'],partidos:[
     {n:1,fecha:'16 jun',hora:'21:00',local:'Francia',visitante:'Senegal',sede:'MetLife, Nueva Jersey'},
     {n:2,fecha:'17 jun',hora:'00:00*',local:'Irak',visitante:'Noruega',sede:'Gillette, Boston'},
-    {n:3,fecha:'22 jun',hora:'03:00*',local:'Francia',visitante:'Irak',sede:'AT&T, Dallas'},
-    {n:4,fecha:'22 jun',hora:'04:00*',local:'Noruega',visitante:'Senegal',sede:'Hard Rock, Miami'},
-    {n:5,fecha:'27 jun',hora:'01:00*',local:'Noruega',visitante:'Francia',sede:'MetLife, Nueva Jersey'},
-    {n:6,fecha:'27 jun',hora:'01:00*',local:'Senegal',visitante:'Irak',sede:'MetLife, Nueva Jersey'}
+    {n:3,fecha:'22 jun',hora:'23:00',local:'Francia',visitante:'Irak',sede:'AT&T, Dallas'},
+    {n:4,fecha:'23 jun',hora:'02:00*',local:'Noruega',visitante:'Senegal',sede:'Hard Rock, Miami'},
+    {n:5,fecha:'26 jun',hora:'21:00',local:'Noruega',visitante:'Francia',sede:'MetLife, Nueva Jersey'},
+    {n:6,fecha:'26 jun',hora:'21:00',local:'Senegal',visitante:'Irak',sede:'MetLife, Nueva Jersey'}
   ]},
   {id:'J',equipos:['Argentina','Argelia','Austria','Jordania'],partidos:[
     {n:1,fecha:'17 jun',hora:'03:00*',local:'Argentina',visitante:'Argelia',sede:'Arrowhead, Kansas City'},
     {n:2,fecha:'17 jun',hora:'06:00*',local:'Austria',visitante:'Jordania',sede:"Levi's, Santa Clara"},
-    {n:3,fecha:'22 jun',hora:'22:00',local:'Argentina',visitante:'Austria',sede:'MetLife, Nueva Jersey'},
-    {n:4,fecha:'23 jun',hora:'01:00*',local:'Jordania',visitante:'Argelia',sede:'MetLife, Nueva Jersey'},
-    {n:5,fecha:'27 jun',hora:'03:00*',local:'Jordania',visitante:'Argentina',sede:'AT&T, Dallas'},
-    {n:6,fecha:'27 jun',hora:'03:00*',local:'Argelia',visitante:'Austria',sede:'AT&T, Dallas'}
+    {n:3,fecha:'22 jun',hora:'19:00',local:'Argentina',visitante:'Austria',sede:'MetLife, Nueva Jersey'},
+    {n:4,fecha:'23 jun',hora:'05:00*',local:'Jordania',visitante:'Argelia',sede:'MetLife, Nueva Jersey'},
+    {n:5,fecha:'28 jun',hora:'04:00*',local:'Jordania',visitante:'Argentina',sede:'AT&T, Dallas'},
+    {n:6,fecha:'28 jun',hora:'04:00*',local:'Argelia',visitante:'Austria',sede:'AT&T, Dallas'}
   ]},
   {id:'K',equipos:['Portugal','Colombia','Uzbekistán','R.D. Congo'],partidos:[
     {n:1,fecha:'17 jun',hora:'19:00',local:'Portugal',visitante:'R.D. Congo',sede:'NRG, Houston'},
     {n:2,fecha:'18 jun',hora:'04:00*',local:'Uzbekistán',visitante:'Colombia',sede:'Azteca, México'},
-    {n:3,fecha:'23 jun',hora:'01:00*',local:'Portugal',visitante:'Uzbekistán',sede:'Lumen Field, Seattle'},
-    {n:4,fecha:'23 jun',hora:'01:00*',local:'Colombia',visitante:'R.D. Congo',sede:'Lumen Field, Seattle'},
-    {n:5,fecha:'27 jun',hora:'01:00*',local:'Colombia',visitante:'Portugal',sede:'SoFi, Los Ángeles'},
-    {n:6,fecha:'27 jun',hora:'01:00*',local:'R.D. Congo',visitante:'Uzbekistán',sede:'SoFi, Los Ángeles'}
+    {n:3,fecha:'23 jun',hora:'19:00',local:'Portugal',visitante:'Uzbekistán',sede:'Lumen Field, Seattle'},
+    {n:4,fecha:'24 jun',hora:'04:00*',local:'Colombia',visitante:'R.D. Congo',sede:'Lumen Field, Seattle'},
+    {n:5,fecha:'28 jun',hora:'01:30*',local:'Colombia',visitante:'Portugal',sede:'SoFi, Los Ángeles'},
+    {n:6,fecha:'28 jun',hora:'01:30*',local:'R.D. Congo',visitante:'Uzbekistán',sede:'SoFi, Los Ángeles'}
   ]},
   {id:'L',equipos:['Inglaterra','Croacia','Ghana','Panamá'],partidos:[
     {n:1,fecha:'17 jun',hora:'22:00',local:'Inglaterra',visitante:'Croacia',sede:'AT&T, Dallas'},
     {n:2,fecha:'18 jun',hora:'01:00*',local:'Ghana',visitante:'Panamá',sede:'BMO Field, Toronto'},
-    {n:3,fecha:'23 jun',hora:'03:00*',local:'Inglaterra',visitante:'Ghana',sede:'Lincoln, Filadelfia'},
-    {n:4,fecha:'23 jun',hora:'03:00*',local:'Panamá',visitante:'Croacia',sede:'Lincoln, Filadelfia'},
-    {n:5,fecha:'27 jun',hora:'03:00*',local:'Panamá',visitante:'Inglaterra',sede:'Arrowhead, Kansas City'},
-    {n:6,fecha:'27 jun',hora:'03:00*',local:'Croacia',visitante:'Ghana',sede:'Arrowhead, Kansas City'}
+    {n:3,fecha:'23 jun',hora:'22:00',local:'Inglaterra',visitante:'Ghana',sede:'Lincoln, Filadelfia'},
+    {n:4,fecha:'24 jun',hora:'01:00*',local:'Panamá',visitante:'Croacia',sede:'Lincoln, Filadelfia'},
+    {n:5,fecha:'27 jun',hora:'23:00',local:'Panamá',visitante:'Inglaterra',sede:'Arrowhead, Kansas City'},
+    {n:6,fecha:'27 jun',hora:'23:00',local:'Croacia',visitante:'Ghana',sede:'Arrowhead, Kansas City'}
   ]}
 ];
 
