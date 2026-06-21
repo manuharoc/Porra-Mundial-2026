@@ -67,13 +67,13 @@ async function loadAllData(){
 
 function getDefaultBonusAciertos(){
   return [
-    { n: 10, pts: 15 },
-    { n: 20, pts: 30 },
-    { n: 30, pts: 45 },
-    { n: 40, pts: 60 },
-    { n: 50, pts: 75 },
-    { n: 60, pts: 90 },
-    { n: 70, pts: 105 }
+    { n: 10, pts: 10 },
+    { n: 20, pts: 20 },
+    { n: 30, pts: 30 },
+    { n: 40, pts: 40 },
+    { n: 50, pts: 50 },
+    { n: 60, pts: 60 },
+    { n: 70, pts: 70 }
   ];
 }
 
