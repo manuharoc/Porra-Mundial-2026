@@ -210,7 +210,7 @@ function renderPredInputsHtml(key){
   const saved=((cache.predicciones[uid]||{}).grupos||{})[key];
   const isSaved=saved&&saved.gl!==''&&saved.gl!==undefined;
   const isMe = uid === getMyId() || isAdmin();
-  const isLocked = getMatchLockStatusByKey(key, false);
+  const isLocked = isAdmin() ? false : getMatchLockStatusByKey(key, false);
 
   if (!isMe && !isLocked) {
      return '<div class="pred-inputs" style="justify-content:center"><span style="font-size:12px;color:var(--text3)">🔒 Oculto</span></div>';
@@ -243,7 +243,7 @@ async function savePredGrupo(key){
   const uid=currentViewUser;
   if(!uid){ showToast('Selecciona un participante primero'); return; }
   if(uid !== getMyId() && !isAdmin()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
-  if(getMatchLockStatusByKey(key, false)) { showToast('❌ Este partido ya está bloqueado'); return; }
+  if(!isAdmin() && getMatchLockStatusByKey(key, false)) { showToast('❌ Este partido ya está bloqueado'); return; }
   const l=document.getElementById('pi_'+key+'_l'), v=document.getElementById('pi_'+key+'_v');
   if(!l||!v||l.value===''||v.value===''){ showToast('Introduce el marcador'); return; }
   const gl=parseInt(l.value), gv=parseInt(v.value);
@@ -700,7 +700,7 @@ async function saveElimPredRow(code) {
   const uid = currentViewUser;
   if (!uid) { showToast('Selecciona un participante primero'); return; }
   if (uid !== getMyId() && !isAdmin()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
-  if (getMatchLockStatusByKey(code, true)) { showToast('❌ Este partido ya está bloqueado'); return; }
+  if (!isAdmin() && getMatchLockStatusByKey(code, true)) { showToast('❌ Este partido ya está bloqueado'); return; }
 
   const localEl = document.getElementById('local-' + code);
   const visitanteEl = document.getElementById('visitante-' + code);
