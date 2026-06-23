@@ -209,8 +209,8 @@ function renderPredInputsHtml(key){
   if(!uid) return '<span style="font-size:11px;color:var(--text3)">Selecciona usuario</span>';
   const saved=((cache.predicciones[uid]||{}).grupos||{})[key];
   const isSaved=saved&&saved.gl!==''&&saved.gl!==undefined;
-  const isMe = uid === getMyId() || isAdmin();
-  const isLocked = isAdmin() ? false : getMatchLockStatusByKey(key, false);
+  const isMe = uid === getMyId();
+  const isLocked = getMatchLockStatusByKey(key, false);
 
   if (!isMe && !isLocked) {
      return '<div class="pred-inputs" style="justify-content:center"><span style="font-size:12px;color:var(--text3)">🔒 Oculto</span></div>';
@@ -242,8 +242,8 @@ function fireConfetti() {
 async function savePredGrupo(key){
   const uid=currentViewUser;
   if(!uid){ showToast('Selecciona un participante primero'); return; }
-  if(uid !== getMyId() && !isAdmin()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
-  if(!isAdmin() && getMatchLockStatusByKey(key, false)) { showToast('❌ Este partido ya está bloqueado'); return; }
+  if(uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
+  if(getMatchLockStatusByKey(key, false)) { showToast('❌ Este partido ya está bloqueado'); return; }
   const l=document.getElementById('pi_'+key+'_l'), v=document.getElementById('pi_'+key+'_v');
   if(!l||!v||l.value===''||v.value===''){ showToast('Introduce el marcador'); return; }
   const gl=parseInt(l.value), gv=parseInt(v.value);
@@ -291,7 +291,7 @@ async function magicFill() {
   const uid = currentViewUser;
   if (!uid) { showToast('Selecciona un participante primero'); return; }
   
-  if (uid !== getMyId() && !isAdmin()) {
+  if (uid !== getMyId()) {
     showToast('❌ Solo puedes rellenar tus propias predicciones');
     return;
   }
@@ -699,8 +699,8 @@ function updateWinnerDropdown(code) {
 async function saveElimPredRow(code) {
   const uid = currentViewUser;
   if (!uid) { showToast('Selecciona un participante primero'); return; }
-  if (uid !== getMyId() && !isAdmin()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
-  if (!isAdmin() && getMatchLockStatusByKey(code, true)) { showToast('❌ Este partido ya está bloqueado'); return; }
+  if (uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
+  if (getMatchLockStatusByKey(code, true)) { showToast('❌ Este partido ya está bloqueado'); return; }
 
   const localEl = document.getElementById('local-' + code);
   const visitanteEl = document.getElementById('visitante-' + code);
@@ -815,7 +815,7 @@ function renderElimListView() {
   const container = document.getElementById('elim-view-container');
   if (!container) return;
   const uid=currentViewUser;
-  const isMe = uid === getMyId() || isAdmin();
+  const isMe = uid === getMyId();
   const disStr = isMe ? '' : ' disabled';
   let html='';
   
@@ -880,7 +880,7 @@ function renderElimBracketView() {
   const container = document.getElementById('elim-view-container');
   if (!container) return;
   const uid=currentViewUser;
-  const isMe = uid === getMyId() || isAdmin();
+  const isMe = uid === getMyId();
   const disStr = isMe ? '' : ' disabled';
 
   let html = '<div class="bracket-wrapper"><div class="bracket-layout">';
@@ -970,7 +970,7 @@ function renderEspeciales(){
 
   // Render bonus panel (visible for all)
   renderBonusAciertosPanel();
-  const isMe = uid === getMyId() || isAdmin();
+  const isMe = uid === getMyId();
   const disStr = isMe ? '' : ' disabled';
 
   ['select-campeon','select-subcampeon','input-pichichi','input-pichichiEspana','select-tercero','select-mas-goles','select-mas-tarjetas'].forEach(id => {
@@ -1043,7 +1043,7 @@ function renderSpecialTimestamp(key, isoStr){
 async function saveSpecial(type, value){
   const uid=currentViewUser;
   if(!uid){ showToast('Selecciona un participante primero'); return; }
-  if(uid !== getMyId() && !isAdmin()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
+  if(uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
   if(!value) return;
   if(!cache.predicciones[uid]) cache.predicciones[uid]={grupos:{},elim:{},especiales:{},especialesTs:{}};
   const isNew=!cache.predicciones[uid].especiales[type];
