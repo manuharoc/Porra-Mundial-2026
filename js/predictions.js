@@ -708,7 +708,7 @@ async function saveElimPredRow(code) {
   const uid = currentViewUser;
   if (!uid) { showToast('Selecciona un participante primero'); return; }
   if (uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
-  if (getMatchLockStatusByKey(code, true)) { showToast('❌ Este partido ya está bloqueado'); return; }
+  if (getMatchLockStatusByKey(code, true) && !isAdmin()) { showToast('❌ Este partido ya está bloqueado'); return; }
 
   const lEl = document.getElementById(`pi_elim_${code}_l`);
   const vEl = document.getElementById(`pi_elim_${code}_v`);
@@ -789,7 +789,7 @@ function renderElimInputsHtml(code, pObj, isMe, isLocked, displayLocal, displayV
     return `<div style="font-size:12px;color:var(--text3);padding:8px 0;text-align:center">🔒 Oculto</div>`;
   }
   
-  const dStr = (isMe && !isLocked) ? '' : ' disabled';
+  const dStr = (isMe && (!isLocked || isAdmin())) ? '' : ' disabled';
   const gl = pObj && pObj.gl !== undefined ? pObj.gl : '';
   const gv = pObj && pObj.gv !== undefined ? pObj.gv : '';
   const pro = pObj && pObj.prorroga ? 'checked' : '';
@@ -818,6 +818,56 @@ function renderElimInputsHtml(code, pObj, isMe, isLocked, displayLocal, displayV
       </div>
     </div>
   `;
+}
+
+function renderElimPredResultPill(pObj, rObjStr, code, displayLocal, displayVisitante) {
+  if (!pObj || !pObj.ganador) return `<span class="pred-wrong" style="background:rgba(239,68,68,0.1);color:var(--red);padding:4px 8px;border-radius:4px;">Sin predicción <span class="pts-earned">0 pts</span></span>`;
+
+  let rObj = null;
+  if (rObjStr && rObjStr.startsWith('{')) {
+    try { rObj = JSON.parse(rObjStr); } catch(e) { rObj = { ganador: rObjStr }; }
+  } else {
+    rObj = { ganador: rObjStr };
+  }
+
+  let pts = 0;
+  const matchNum = parseInt(code.replace('M',''));
+  let basePts = 0;
+  if(matchNum>=73&&matchNum<=88) basePts=getNormaPts('Ronda 32', '', 4);
+  else if(matchNum>=89&&matchNum<=96) basePts=getNormaPts('Octavos', '', 5);
+  else if(matchNum>=97&&matchNum<=100) basePts=getNormaPts('Cuartos', '', 6);
+  else if((matchNum===101||matchNum===102)) basePts=getNormaPts('Semis', '', 8);
+  else if(matchNum===104) basePts=getNormaPts('Final', '', 10);
+
+  let exactPts = 0, proPts = 0, penPts = 0;
+  let winnerCorrect = pObj.ganador === rObj.ganador;
+  
+  if (winnerCorrect) pts += basePts;
+  
+  if (cache.configModo === 'interactivo') {
+    if (pObj.gl !== undefined && rObj.gl !== undefined && pObj.gl === rObj.gl && pObj.gv === rObj.gv) { exactPts = getNormaPts('Eliminatorias', 'exacto', 5); pts += exactPts; }
+    if (rObj.prorroga && pObj.prorroga) { proPts = getNormaPts('Eliminatorias', 'prórroga', 2); pts += proPts; }
+    if (rObj.penaltis && pObj.penaltis === rObj.penaltis) { penPts = getNormaPts('Eliminatorias', 'penaltis', 3); pts += penPts; }
+  }
+
+  let cls = 'pred-wrong';
+  let label = 'Fallo ✗';
+  if (winnerCorrect) {
+    if (exactPts > 0) { cls = 'pred-exact'; label = '¡Exacto! 🎯'; }
+    else { cls = 'pred-partial'; label = 'Ganador ✓'; }
+  } else if (exactPts > 0 || proPts > 0 || penPts > 0) {
+    cls = 'pred-partial'; label = 'Parcial';
+  }
+
+  let predStr = pObj.gl !== undefined ? `${pObj.gl}-${pObj.gv}` : pObj.ganador;
+  if (pObj.gl !== undefined) {
+    if (pObj.prorroga) predStr += ' (Pró)';
+    if (pObj.penaltis) predStr += ` [Pasa ${pObj.penaltis}]`;
+  } else {
+    predStr = `Pasa ${pObj.ganador}`;
+  }
+
+  return `<div style="margin-top:6px;text-align:center;"><span class="${cls}" style="display:inline-block;padding:4px 8px;border-radius:4px;">${predStr} <span style="opacity:0.8;font-size:10px;margin-left:4px">${label}</span><span class="pts-earned" style="margin-left:6px;font-weight:bold;">+${pts} pts</span></span></div>`;
 }
 
 // ===================== PRED ELIM =====================
@@ -940,7 +990,12 @@ function renderElimListView() {
       }
 
       const isLocked = getMatchLockStatusByKey(m.code, true);
-      const selectHtml = renderElimInputsHtml(m.code, pObj, isMe, isLocked, displayLocal, displayVisitante);
+      let selectHtml = '';
+      if (res) {
+        selectHtml = renderElimPredResultPill(pObj, res, m.code, displayLocal, displayVisitante);
+      } else {
+        selectHtml = renderElimInputsHtml(m.code, pObj, isMe, isLocked, displayLocal, displayVisitante);
+      }
 
       html+=`
         <div class="elim-row ${predVal ? 'has-pred' : ''}">
@@ -1002,6 +1057,14 @@ function renderElimBracketView() {
       const displayLocal = resolveTeamForSlot(m.local, uid);
       const displayVisitante = resolveTeamForSlot(m.visitante, uid);
       const isLocked = getMatchLockStatusByKey(m.code, true);
+      const res=(cache.resultados.elim||{})[m.code];
+      
+      let selectHtml = '';
+      if (res) {
+        selectHtml = renderElimPredResultPill(pObj, res, m.code, displayLocal, displayVisitante);
+      } else {
+        selectHtml = renderElimInputsHtml(m.code, pObj, isMe, isLocked, displayLocal, displayVisitante);
+      }
 
       html += `
         <div class="bracket-match" style="min-height: 120px;">
@@ -1009,7 +1072,7 @@ function renderElimBracketView() {
           <div class="bm-team ${predWinner === displayLocal && predWinner ? 'winner' : ''}">${getFlagHtml(displayLocal)} ${displayLocal || '—'}</div>
           <div class="bm-team ${predWinner === displayVisitante && predWinner ? 'winner' : ''}">${getFlagHtml(displayVisitante)} ${displayVisitante || '—'}</div>
           <div style="margin-top:8px;">
-            ${renderElimInputsHtml(m.code, pObj, isMe, isLocked, displayLocal, displayVisitante)}
+            ${selectHtml}
           </div>
         </div>
       `;
