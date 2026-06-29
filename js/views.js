@@ -211,7 +211,14 @@ function renderCalendar(dateStr) {
       const visitanteResolved = resolveActualTeamForSlot(m.visitante) || m.visitante;
       const res = (cache.resultados.elim || {})[m.code];
       const isPlayed = !!res;
-      const resultText = isPlayed ? `✓ ${res}` : '';
+      let actualStr = res;
+      if (res && typeof res === 'string' && res.startsWith('{')) {
+        try {
+          const rObj = JSON.parse(res);
+          actualStr = `${rObj.gl} – ${rObj.gv}${rObj.prorroga ? ' (Pró)' : ''}${rObj.penaltis ? ` [Pasa ${rObj.penaltis}]` : ''}`;
+        } catch(e) {}
+      }
+      const resultText = isPlayed ? `✓ ${actualStr}` : '';
       allMatches.push({ ...m, local: localResolved, visitante: visitanteResolved, stage: shortName, key: m.code, isPlayed, resultText, isElim: true });
     });
   });

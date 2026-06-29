@@ -97,18 +97,42 @@ function calcScore(uid){
   const ePreds=preds.elim||{}, eRes=cache.resultados.elim||{};
   for(const code in ePreds){
     let w=ePreds[code];
-    const r=eRes[code];
+    let r=eRes[code];
     if(!r||!w) continue;
+    
+    let pObj = null, rObj = null;
+    let predGanador = w;
+    let resGanador = r;
+    
     if (w.startsWith('{')) {
-      try { w = JSON.parse(w).ganador; } catch(e){}
+      try { pObj = JSON.parse(w); predGanador = pObj.ganador; } catch(e){}
     }
-    if (w !== r) continue;
+    if (r.startsWith('{')) {
+      try { rObj = JSON.parse(r); resGanador = rObj.ganador; } catch(e){}
+    }
+    
     const m=parseInt(code.replace('M',''));
-    if(m>=73&&m<=88) r32+=ptsR32;
-    else if(m>=89&&m<=96) octavos+=ptsOctavos;
-    else if(m>=97&&m<=100) cuartos+=ptsCuartos;
-    else if((m===101||m===102)) semis+=ptsSemis;
-    else if(m===104) final_+=ptsFinal;
+    let roundPoints = 0;
+    
+    if (predGanador === resGanador) {
+       if(m>=73&&m<=88) roundPoints+=ptsR32;
+       else if(m>=89&&m<=96) roundPoints+=ptsOctavos;
+       else if(m>=97&&m<=100) roundPoints+=ptsCuartos;
+       else if((m===101||m===102)) roundPoints+=ptsSemis;
+       else if(m===104) roundPoints+=ptsFinal;
+    }
+    
+    if (pObj && rObj) {
+       if (pObj.gl === rObj.gl && pObj.gv === rObj.gv) roundPoints += 5;
+       if (rObj.prorroga && pObj.prorroga === true) roundPoints += 2;
+       if (rObj.penaltis && pObj.penaltis === rObj.penaltis) roundPoints += 3;
+    }
+    
+    if(m>=73&&m<=88) r32+=roundPoints;
+    else if(m>=89&&m<=96) octavos+=roundPoints;
+    else if(m>=97&&m<=100) cuartos+=roundPoints;
+    else if((m===101||m===102)) semis+=roundPoints;
+    else if(m===104) final_+=roundPoints;
   }
   const esp=preds.especiales||{}, re=cache.resultados.especiales||{};
   if(esp.campeon&&re.campeon&&esp.campeon===re.campeon) campeon_+=ptsCamp;

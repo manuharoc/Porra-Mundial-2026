@@ -60,18 +60,44 @@ function renderSuperadmin(res){
       const localResolved = resolveActualTeamForSlot(m.local);
       const visitanteResolved = resolveActualTeamForSlot(m.visitante);
       const cur = (res.elim||{})[m.code];
-      html += `<div class="sa-row">
+      let rObj = null;
+      let actualStr = cur;
+      if (cur) {
+        if (typeof cur === 'string' && cur.startsWith('{')) {
+          try {
+            rObj = JSON.parse(cur);
+            actualStr = `${rObj.gl}-${rObj.gv}${rObj.prorroga ? ' (Pró)' : ''}${rObj.penaltis ? ` [Pasa ${rObj.penaltis}]` : ''}`;
+          } catch(e) {}
+        }
+      }
+      
+      const gl = rObj && rObj.gl !== undefined ? rObj.gl : '';
+      const gv = rObj && rObj.gv !== undefined ? rObj.gv : '';
+      const pro = rObj && rObj.prorroga ? 'checked' : '';
+      const pen = rObj && rObj.penaltis ? rObj.penaltis : '';
+      
+      html += `<div class="sa-row" style="align-items:flex-start">
         <div>
-          <div class="sa-match-info">${m.code}: ${localResolved} vs ${visitanteResolved} ${cur?`<span class="sa-result-tag">✓ ${cur}</span>`:''}</div>
+          <div class="sa-match-info">${m.code}: ${localResolved} vs ${visitanteResolved} ${cur?`<span class="sa-result-tag">✓ ${actualStr}</span>`:''}</div>
           <div class="sa-match-sub">${m.fecha} · ${m.hora} · ${m.sede}</div>
         </div>
-        <div class="sa-inputs">
-          <select class="sa-select" id="sa_elim_${m.code}">
-            <option value="">— Clasificado —</option>
-            <option value="${localResolved}" ${cur===localResolved?'selected':''}>${localResolved}</option>
-            <option value="${visitanteResolved}" ${cur===visitanteResolved?'selected':''}>${visitanteResolved}</option>
-          </select>
-          <button class="sa-save" onclick="saveGlobalElim('${m.code}')">Guardar</button>
+        <div class="sa-inputs" style="flex-direction:column; gap:4px; align-items:flex-end; width: 140px;">
+          <div style="display:flex; gap:4px; align-items:center;">
+            <input class="sa-inp" type="number" min="0" max="30" id="sa_elim_${m.code}_l" value="${gl}" placeholder="–">
+            <span class="sa-sep">–</span>
+            <input class="sa-inp" type="number" min="0" max="30" id="sa_elim_${m.code}_v" value="${gv}" placeholder="–">
+          </div>
+          <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:var(--text3);">
+            <input type="checkbox" id="sa_elim_${m.code}_pro" ${pro}> <label>Prórroga</label>
+          </div>
+          <div style="width:100%;">
+            <select id="sa_elim_${m.code}_pen" style="width:100%; font-size:11px; padding:4px; border-radius:4px; background:var(--s2); color:var(--text); border:1px solid var(--border2);">
+              <option value="">— Gana por penaltis —</option>
+              <option value="${localResolved}" ${pen===localResolved?'selected':''}>${localResolved}</option>
+              <option value="${visitanteResolved}" ${pen===visitanteResolved?'selected':''}>${visitanteResolved}</option>
+            </select>
+          </div>
+          <button class="sa-save" onclick="saveGlobalElim('${m.code}', '${localResolved}', '${visitanteResolved}')" style="width:100%; margin-top:4px;">Guardar</button>
         </div>
       </div>`;
     });
@@ -141,17 +167,39 @@ async function saveGlobalGrupo(key, local, visitante){
   renderSuperadmin(r);
 }
 
-async function saveGlobalElim(code){
-  const winner = document.getElementById('sa_elim_'+code).value;
-  if(!winner){ showToast('Selecciona el clasificado'); return; }
-  const { error } = await sb.from('resultados_globales').upsert({tipo:'elim',match_key:code,valor:winner,updated_at:new Date().toISOString()},{onConflict:'tipo,match_key'});
+async function saveGlobalElim(code, local, visitante){
+  const lEl = document.getElementById('sa_elim_'+code+'_l');
+  const vEl = document.getElementById('sa_elim_'+code+'_v');
+  const proEl = document.getElementById('sa_elim_'+code+'_pro');
+  const penEl = document.getElementById('sa_elim_'+code+'_pen');
+  
+  if(!lEl || !vEl || lEl.value === '' || vEl.value === '') { showToast('Introduce los goles'); return; }
+  
+  const gl = parseInt(lEl.value);
+  const gv = parseInt(vEl.value);
+  const prorroga = proEl ? proEl.checked : false;
+  let penaltis = '';
+  let ganador = '';
+  
+  if (gl > gv) ganador = local;
+  else if (gv > gl) ganador = visitante;
+  else {
+    penaltis = penEl ? penEl.value : '';
+    if (!penaltis) { showToast('Selecciona quién gana en los penaltis'); return; }
+    ganador = penaltis;
+  }
+  
+  const data = { gl, gv, prorroga, penaltis, ganador, local, visitante };
+  const jsonStr = JSON.stringify(data);
+
+  const { error } = await sb.from('resultados_globales').upsert({tipo:'elim',match_key:code,valor:jsonStr,updated_at:new Date().toISOString()},{onConflict:'tipo,match_key'});
   if(error){ showToast('❌ Error: '+error.message); return; }
   cache.resultados.elim = cache.resultados.elim||{};
-  cache.resultados.elim[code] = winner;
-  showToast(`✅ ${code}: ${winner} clasificado`);
-  const { data } = await sb.from('resultados_globales').select('*');
+  cache.resultados.elim[code] = jsonStr;
+  showToast(`✅ ${code}: Guardado`);
+  const { data: globalData } = await sb.from('resultados_globales').select('*');
   const r={grupos:{},elim:{},especiales:{}};
-  for(const x of (data||[])){ r[x.tipo]=r[x.tipo]||{}; r[x.tipo][x.match_key]=x.valor; }
+  for(const x of (globalData||[])){ r[x.tipo]=r[x.tipo]||{}; r[x.tipo][x.match_key]=x.valor; }
   renderSuperadmin(r);
 }
 

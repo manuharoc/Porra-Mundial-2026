@@ -56,7 +56,7 @@ function checkPredChanged(key) {
 function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos) {
   const modo = cache.configModo || 'interactivo';
   const inicioTorneo = new Date(2026, 5, 11, 21, 0, 0).getTime();
-  const inicioEliminatorias = new Date(2026, 5, 28, 19, 0, 0).getTime();
+  const inicioEliminatorias = new Date(2026, 5, 29, 19, 0, 0).getTime();
   const now = new Date().getTime();
 
   if (modo === 'dificil') return now > inicioTorneo;
@@ -709,19 +709,41 @@ async function saveElimPredRow(code) {
   if (uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
   if (getMatchLockStatusByKey(code, true)) { showToast('❌ Este partido ya está bloqueado'); return; }
 
-  const localEl = document.getElementById('local-' + code);
-  const visitanteEl = document.getElementById('visitante-' + code);
-  const winnerEl = document.getElementById('winner-' + code);
+  const lEl = document.getElementById(`pi_elim_${code}_l`);
+  const vEl = document.getElementById(`pi_elim_${code}_v`);
+  const proEl = document.getElementById(`pi_elim_${code}_pro`);
+  const penEl = document.getElementById(`pi_elim_${code}_pen`);
 
-  const local = localEl ? (localEl.value || localEl.textContent || '').trim() : '';
-  const visitante = visitanteEl ? (visitanteEl.value || visitanteEl.textContent || '').trim() : '';
-  const ganador = winnerEl ? winnerEl.value : '';
+  if (!lEl || !vEl || lEl.value === '' || vEl.value === '') { 
+    showToast('Introduce el marcador'); return; 
+  }
+
+  const gl = parseInt(lEl.value);
+  const gv = parseInt(vEl.value);
+  const prorroga = proEl ? proEl.checked : false;
+  let penaltis = '';
+
+  const m = findMatchInPhases(code);
+  const local = resolveTeamForSlot(m.local, uid);
+  const visitante = resolveTeamForSlot(m.visitante, uid);
+
+  let ganador = '';
+  if (gl > gv) ganador = local;
+  else if (gv > gl) ganador = visitante;
+  else {
+    penaltis = penEl ? penEl.value : '';
+    if (!penaltis) { showToast('Selecciona quién gana en los penaltis'); return; }
+    ganador = penaltis;
+  }
 
   if (!cache.predicciones[uid]) cache.predicciones[uid] = { grupos:{}, elim:{}, especiales:{}, especialesTs:{} };
 
-  const data = { local, visitante, ganador };
+  const data = { gl, gv, prorroga, penaltis, ganador, local, visitante };
   const jsonStr = JSON.stringify(data);
   cache.predicciones[uid].elim[code] = jsonStr;
+
+  const btn = document.getElementById(`psb_elim_${code}`);
+  if(btn) btn.classList.add('saved');
 
   const { error } = await sb.from('predicciones_elim').upsert({
     participante_id: uid,
@@ -731,14 +753,70 @@ async function saveElimPredRow(code) {
 
   if (error) {
     showToast('❌ Error al guardar');
+    if(btn) btn.classList.remove('saved');
   } else {
     showToast('✅ Guardado');
+    fireConfetti();
     if (typeof currentElimView !== 'undefined' && currentElimView === 'bracket') {
       renderElimBracketView();
     } else {
       renderElimListView();
     }
   }
+}
+
+function checkElimPredChanged(code) {
+  const lEl = document.getElementById(`pi_elim_${code}_l`);
+  const vEl = document.getElementById(`pi_elim_${code}_v`);
+  const penContainer = document.getElementById(`pi_elim_${code}_pen_container`);
+  if (lEl && vEl && penContainer) {
+    if (lEl.value !== '' && vEl.value !== '' && parseInt(lEl.value) === parseInt(vEl.value)) {
+      penContainer.style.display = 'block';
+    } else {
+      penContainer.style.display = 'none';
+      const penSel = document.getElementById(`pi_elim_${code}_pen`);
+      if (penSel) penSel.value = '';
+    }
+  }
+  
+  const btn = document.getElementById(`psb_elim_${code}`);
+  if (btn) btn.classList.remove('saved');
+}
+
+function renderElimInputsHtml(code, pObj, isMe, isLocked, displayLocal, displayVisitante) {
+  if (!isMe && !isLocked) {
+    return `<div style="font-size:12px;color:var(--text3);padding:8px 0;text-align:center">🔒 Oculto</div>`;
+  }
+  
+  const dStr = (isMe && !isLocked) ? '' : ' disabled';
+  const gl = pObj && pObj.gl !== undefined ? pObj.gl : '';
+  const gv = pObj && pObj.gv !== undefined ? pObj.gv : '';
+  const pro = pObj && pObj.prorroga ? 'checked' : '';
+  const pen = pObj && pObj.penaltis ? pObj.penaltis : '';
+  
+  const showPen = (gl !== '' && gv !== '' && parseInt(gl) === parseInt(gv)) ? 'block' : 'none';
+  
+  return `
+    <div class="elim-pred-inputs" style="display:flex; flex-direction:column; gap:6px; align-items:center; width:100%;">
+      <div style="display:flex; gap:4px; align-items:center;">
+        <input class="pred-inp" type="number" min="0" max="20" id="pi_elim_${code}_l" value="${gl}" placeholder="–" oninput="checkElimPredChanged('${code}')"${dStr}>
+        <span class="pred-sep">–</span>
+        <input class="pred-inp" type="number" min="0" max="20" id="pi_elim_${code}_v" value="${gv}" placeholder="–" oninput="checkElimPredChanged('${code}')"${dStr}>
+        ${(isMe && !isLocked) ? `<button class="pred-save ${pObj?'saved':''}" id="psb_elim_${code}" onclick="saveElimPredRow('${code}')">✓</button>` : ''}
+      </div>
+      <div style="display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text3);">
+        <input type="checkbox" id="pi_elim_${code}_pro" ${pro} onchange="checkElimPredChanged('${code}')" ${dStr}>
+        <label for="pi_elim_${code}_pro" style="cursor:pointer">Prórroga</label>
+      </div>
+      <div id="pi_elim_${code}_pen_container" style="display:${showPen}; width:100%;">
+        <select id="pi_elim_${code}_pen" style="width:100%; font-size:12px; padding:4px;" onchange="checkElimPredChanged('${code}')" ${dStr}>
+          <option value="">— Gana por penaltis —</option>
+          ${displayLocal && ALL_TEAMS.includes(displayLocal) ? `<option value="${displayLocal}" ${pen === displayLocal ? 'selected' : ''}>${displayLocal}</option>` : ''}
+          ${displayVisitante && ALL_TEAMS.includes(displayVisitante) ? `<option value="${displayVisitante}" ${pen === displayVisitante ? 'selected' : ''}>${displayVisitante}</option>` : ''}
+        </select>
+      </div>
+    </div>
+  `;
 }
 
 // ===================== PRED ELIM =====================
@@ -830,12 +908,17 @@ function renderElimListView() {
     html+=`<div class="bracket-phase"><div class="bracket-phase-title">${phase.name}</div>`;
     phase.partidos.forEach(m=>{
       const predVal = uid ? (((cache.predicciones[uid]||{}).elim||{})[m.code]) : null;
+      let pObj = null;
       let predWinner = '';
       if (predVal) {
         if (predVal.startsWith('{')) {
-          try { predWinner = JSON.parse(predVal).ganador || ''; } catch(e) { predWinner = predVal; }
+          try { 
+            pObj = JSON.parse(predVal); 
+            predWinner = pObj.ganador || ''; 
+          } catch(e) { predWinner = predVal; pObj = { ganador: predVal }; }
         } else {
           predWinner = predVal;
+          pObj = { ganador: predVal };
         }
       }
 
@@ -843,22 +926,20 @@ function renderElimListView() {
       const displayVisitante = resolveTeamForSlot(m.visitante, uid);
 
       const res=(cache.resultados.elim||{})[m.code];
-      const vsText = res ? `<span class="sa-result-tag">✓ ${res}</span>` : 'VS';
+      let vsText = 'VS';
+      if (res) {
+        let actualStr = res;
+        try {
+           if (res.startsWith('{')) {
+              const rObj = JSON.parse(res);
+              actualStr = `${rObj.gl}-${rObj.gv}${rObj.prorroga ? ' (Pró)' : ''}${rObj.penaltis ? ` [Pasa ${rObj.penaltis}]` : ''}`;
+           }
+        } catch(e) {}
+        vsText = `<span class="sa-result-tag">✓ ${actualStr}</span>`;
+      }
 
       const isLocked = getMatchLockStatusByKey(m.code, true);
-      let selectHtml = '';
-      if (!isMe && !isLocked) {
-         selectHtml = `<div style="font-size:12px;color:var(--text3);padding:8px 0;text-align:center">🔒 Oculto</div>`;
-      } else {
-         const dStr = (isMe && !isLocked) ? '' : ' disabled';
-         selectHtml = `
-            <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" onchange="saveElimPredRow('${m.code}')"${dStr}>
-              <option value="">— Ganador —</option>
-              ${displayLocal && ALL_TEAMS.includes(displayLocal) ? `<option value="${displayLocal}" ${predWinner === displayLocal ? 'selected' : ''}>${displayLocal}</option>` : ''}
-              ${displayVisitante && ALL_TEAMS.includes(displayVisitante) ? `<option value="${displayVisitante}" ${predWinner === displayVisitante ? 'selected' : ''}>${displayVisitante}</option>` : ''}
-            </select>
-         `;
-      }
+      const selectHtml = renderElimInputsHtml(m.code, pObj, isMe, isLocked, displayLocal, displayVisitante);
 
       html+=`
         <div class="elim-row ${predVal ? 'has-pred' : ''}">
@@ -903,42 +984,31 @@ function renderElimBracketView() {
     
     phase.partidos.forEach(m => {
       const predVal = uid ? (((cache.predicciones[uid]||{}).elim||{})[m.code]) : null;
+      let pObj = null;
       let predWinner = '';
       if (predVal) {
         if (predVal.startsWith('{')) {
-          try { predWinner = JSON.parse(predVal).ganador || ''; } catch(e) { predWinner = predVal; }
+          try { 
+            pObj = JSON.parse(predVal); 
+            predWinner = pObj.ganador || ''; 
+          } catch(e) { predWinner = predVal; pObj = { ganador: predVal }; }
         } else {
           predWinner = predVal;
+          pObj = { ganador: predVal };
         }
       }
 
       const displayLocal = resolveTeamForSlot(m.local, uid);
       const displayVisitante = resolveTeamForSlot(m.visitante, uid);
+      const isLocked = getMatchLockStatusByKey(m.code, true);
 
       html += `
-        <div class="bracket-match">
+        <div class="bracket-match" style="min-height: 120px;">
           <div class="bm-code">${m.code} <span style="font-size:9px;color:var(--text3);margin-left:4px">${m.fecha}</span></div>
           <div class="bm-team ${predWinner === displayLocal && predWinner ? 'winner' : ''}">${getFlagHtml(displayLocal)} ${displayLocal || '—'}</div>
           <div class="bm-team ${predWinner === displayVisitante && predWinner ? 'winner' : ''}">${getFlagHtml(displayVisitante)} ${displayVisitante || '—'}</div>
-          <div style="margin-top:6px; display:none;">
-            <input type="hidden" id="local-${m.code}" value="${displayLocal}">
-            <input type="hidden" id="visitante-${m.code}" value="${displayVisitante}">
-          </div>
-          <div style="margin-top:6px">
-            ${(() => {
-              const isLocked = getMatchLockStatusByKey(m.code, true);
-              if (!isMe && !isLocked) {
-                return '<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px">🔒 Oculto</div>';
-              }
-              const dStr = (isMe && !isLocked) ? '' : ' disabled';
-              return `
-                <select id="winner-${m.code}" class="winner-select ${predWinner ? 'chosen' : ''}" style="width:100%; font-size:12px; padding:4px;" onchange="saveElimPredRow('${m.code}')"${dStr}>
-                  <option value="">— Seleccionar —</option>
-                  ${displayLocal && ALL_TEAMS.includes(displayLocal) ? `<option value="${displayLocal}" ${predWinner === displayLocal ? 'selected' : ''}>${displayLocal}</option>` : ''}
-                  ${displayVisitante && ALL_TEAMS.includes(displayVisitante) ? `<option value="${displayVisitante}" ${predWinner === displayVisitante ? 'selected' : ''}>${displayVisitante}</option>` : ''}
-                </select>
-              `;
-            })()}
+          <div style="margin-top:8px;">
+            ${renderElimInputsHtml(m.code, pObj, isMe, isLocked, displayLocal, displayVisitante)}
           </div>
         </div>
       `;
