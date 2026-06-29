@@ -123,7 +123,13 @@ function calcScore(uid){
     }
     
     if (pObj && rObj && cache.configModo === 'interactivo') {
-       if (pObj.gl === rObj.gl && pObj.gv === rObj.gv && !!pObj.prorroga === !!rObj.prorroga) roundPoints += getNormaPts('Eliminatorias', 'exacto', 5);
+       let exact = pObj.gl === rObj.gl && pObj.gv === rObj.gv;
+       if (exact) {
+           let predictedProrrogaButNone = pObj.prorroga === true && !rObj.prorroga;
+           if (!predictedProrrogaButNone) {
+               roundPoints += getNormaPts('Eliminatorias', 'exacto', 5);
+           }
+       }
        if (rObj.prorroga && pObj.prorroga === true) roundPoints += getNormaPts('Eliminatorias', 'prórroga', 2);
        if (rObj.penaltis && pObj.penaltis === rObj.penaltis) roundPoints += getNormaPts('Eliminatorias', 'penaltis', 3);
     }

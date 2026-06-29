@@ -111,7 +111,7 @@ module.exports = async (req, res) => {
     
     // 2. Read local data.js to get GRUPOS
     require.resolve('../data.js'); // Force Vercel to bundle this file
-    const dataJsPath = path.join(process.cwd(), 'data.js');
+    const dataJsPath = path.join(__dirname, '../data.js');
     const dataStr = fs.readFileSync(dataJsPath, 'utf8');
     
     let GRUPOS = [];
