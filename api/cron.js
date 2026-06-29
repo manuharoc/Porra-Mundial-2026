@@ -123,6 +123,7 @@ module.exports = async (req, res) => {
       }
     } catch(err) {
       gruposExtractError = "Error evaluating GRUPOS: " + err.message;
+    }
     let ELIM_PHASES = [];
     try {
       const matchElim = dataStr.match(/const\s+ELIM_PHASES\s*=\s*(\[\s*\{[\s\S]*?\]);\s*const\s+/);
