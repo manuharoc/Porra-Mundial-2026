@@ -491,10 +491,54 @@ function getPossibleTeamsForSlot(slot) {
 
 let r32Memo = { uid: null, map: null, ts: 0 };
 function getPredictedR32(uid) {
-  if (r32Memo.uid === uid && Date.now() - r32Memo.ts < 1000) return r32Memo.map;
-  
-  const standings = getPredictedStandings(uid);
+  if (r32Memo && r32Memo.uid === uid && (Date.now() - r32Memo.ts < 5000)) {
+    return r32Memo.map;
+  }
+
   const mapping = {};
+
+  // HARDCODED OVERRIDE FOR GLOBAL / INTERACTIVE MODE
+  // The user explicitly requested these exact matchups for the global bracket
+  if (uid === null) {
+    mapping['1°A'] = 'México';
+    mapping['2°A'] = 'Sudáfrica';
+    mapping['1°B'] = 'Suiza';
+    mapping['2°B'] = 'Canadá';
+    mapping['1°C'] = 'Brasil';
+    mapping['2°C'] = 'Marruecos';
+    mapping['1°D'] = 'Estados Unidos';
+    mapping['2°D'] = 'Australia';
+    mapping['1°E'] = 'Alemania';
+    mapping['2°E'] = 'Costa de Marfil';
+    mapping['1°F'] = 'Holanda';
+    mapping['2°F'] = 'Japón';
+    mapping['1°G'] = 'Bélgica';
+    mapping['2°G'] = 'Egipto';
+    mapping['1°H'] = 'España';
+    mapping['2°H'] = 'Cabo Verde';
+    mapping['1°I'] = 'Francia';
+    mapping['2°I'] = 'Noruega';
+    mapping['1°J'] = 'Argentina';
+    mapping['2°J'] = 'Austria';
+    mapping['1°K'] = 'Colombia';
+    mapping['2°K'] = 'Portugal';
+    mapping['1°L'] = 'Inglaterra';
+    mapping['2°L'] = 'Croacia';
+
+    mapping['3er C/D/F/G/H'] = 'Paraguay';
+    mapping['3er A/B/C/D/E'] = 'Suecia';
+    mapping['3er C/E/F/H/I'] = 'Ecuador';
+    mapping['3er E/H/I/J/K'] = 'R.D. Congo';
+    mapping['3er B/D/F/I/J'] = 'Bosnia';
+    mapping['3er A/E/H/I/J'] = 'Senegal';
+    mapping['3er E/F/G/I/J'] = 'Argelia';
+    mapping['3er D/E/I/J/L'] = 'Ghana';
+
+    r32Memo = { uid, map: mapping, ts: Date.now() };
+    return mapping;
+  }
+
+  const standings = getPredictedStandings(uid);
   
   GRUPOS.forEach(g => {
     mapping[`1°${g.id}`] = standings[g.id][0].name;
