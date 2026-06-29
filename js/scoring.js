@@ -114,6 +114,11 @@ function calcScore(uid){
     const m=parseInt(code.replace('M',''));
     let roundPoints = 0;
     
+    if (typeof window.resolveActualTeamForSlot === 'function') {
+        predGanador = window.resolveActualTeamForSlot(predGanador);
+        resGanador = window.resolveActualTeamForSlot(resGanador);
+    }
+    
     if (predGanador === resGanador) {
        if(m>=73&&m<=88) roundPoints+=ptsR32;
        else if(m>=89&&m<=96) roundPoints+=ptsOctavos;
