@@ -54,27 +54,9 @@ function checkPredChanged(key) {
 
 // ===================== PRED GRUPOS =====================
 function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos) {
-  const modo = cache.configModo || 'interactivo';
-  const inicioTorneo = new Date(2026, 5, 11, 21, 0, 0).getTime();
-  const inicioEliminatorias = new Date(2026, 5, 29, 19, 0, 0).getTime();
+  const globalDeadline = new Date(2026, 5, 29, 19, 0, 0).getTime(); // 29 de Junio de 2026, 19:00 CEST
   const now = new Date().getTime();
-
-  let individualLock = false;
-  if (matchDateStr && matchTimeStr) {
-    const parts = matchDateStr.split(' ');
-    const day = parseInt(parts[0]);
-    const month = parts[1].startsWith('jun') ? 5 : 6;
-    let timeStr = matchTimeStr.replace('*', '');
-    let tParts = timeStr.split(':');
-    let h = parseInt(tParts[0]);
-    let m = parseInt(tParts[1]);
-    const matchTime = new Date(2026, month, day, h, m, 0).getTime();
-    individualLock = now > matchTime;
-  }
-
-  if (modo === 'dificil') return (now > inicioTorneo) || individualLock;
-  if (modo === 'interactivo') return (isGrupos ? (now > inicioTorneo) : (now > inicioEliminatorias)) || individualLock;
-  return individualLock;
+  return now > globalDeadline;
 }
 
 function getMatchLockStatusByKey(key, isElim) {
