@@ -716,7 +716,14 @@ async function saveElimPredRow(code) {
   const penEl = document.getElementById(`pi_elim_${code}_pen`);
 
   if (!lEl || !vEl || lEl.value === '' || vEl.value === '') { 
-    showToast('Introduce el marcador'); return; 
+    if (cache.predicciones[uid] && cache.predicciones[uid].elim) {
+      delete cache.predicciones[uid].elim[code];
+    }
+    const { error } = await sb.from('predicciones_elim').delete().match({participante_id: uid, match_code: code});
+    if (error) { showToast('❌ Error al borrar: '+error.message); return; }
+    showToast('🗑️ Predicción borrada');
+    renderElimPred();
+    return; 
   }
 
   const gl = parseInt(lEl.value);
@@ -976,36 +983,23 @@ function renderElimListView() {
       const displayLocal = resolveTeamForSlot(m.local, uid);
       const displayVisitante = resolveTeamForSlot(m.visitante, uid);
 
-      const res=(cache.resultados.elim||{})[m.code];
-      let vsText = 'VS';
+      const res = (cache.resultados.elim||{})[m.code];
+      const isLocked = getMatchLockStatusByKey(m.code, true);
+      
+      let resObj = null;
       if (res) {
-        let actualStr = res;
-        try {
-           if (res.startsWith('{')) {
-              const rObj = JSON.parse(res);
-              actualStr = `${rObj.gl}-${rObj.gv}${rObj.prorroga ? ' (Pró)' : ''}${rObj.penaltis ? ` [Pasa ${rObj.penaltis}]` : ''}`;
-           }
-        } catch(e) {}
-        vsText = `<span class="sa-result-tag">✓ ${actualStr}</span>`;
+        try { if(typeof res === 'string' && res.startsWith('{')) resObj = JSON.parse(res); } catch(e) {}
       }
 
-      const isLocked = getMatchLockStatusByKey(m.code, true);
-      let selectHtml = '';
-      if (res) {
-        selectHtml = renderElimPredResultPill(pObj, res, m.code, displayLocal, displayVisitante);
-      } else {
-        selectHtml = renderElimInputsHtml(m.code, pObj, isMe, isLocked, displayLocal, displayVisitante);
-      }
+      let selectHtml = res ? renderElimPredResultPill(pObj, res, m.code, displayLocal, displayVisitante) : renderElimInputsHtml(m.code, pObj, isMe, isLocked, displayLocal, displayVisitante);
 
       html+=`
         <div class="elim-row ${predVal ? 'has-pred' : ''}">
-          <div class="match-code">${m.code}<br><span style="font-size:10px;color:var(--text3)">${m.fecha}</span></div>
-          <div id="local-${m.code}" class="elim-team-label" style="font-weight:700">${getFlagHtml(displayLocal)}${displayLocal}</div>
-          <div class="elim-vs">${vsText}</div>
-          <div id="visitante-${m.code}" class="elim-team-label" style="font-weight:700; text-align:right">${getFlagHtml(displayVisitante)}${displayVisitante}</div>
-          <div class="elim-winner-block">
-            ${selectHtml}
-          </div>
+          <div class="match-meta"><div class="match-date">${m.fecha}</div><div class="match-time">${m.hora||''}</div></div>
+          <div class="team-block"><div class="team-name-match">${getFlagHtml(displayLocal)}${displayLocal||'—'}</div></div>
+          <div class="score-center">${resObj ? `<div class="score-display">${resObj.gl}–${resObj.gv}</div>` : '<div class="score-vs">VS</div>'}<div class="sede">${m.sede||''}</div></div>
+          <div class="team-block right"><div class="team-name-match">${getFlagHtml(displayVisitante)}${displayVisitante||'—'}</div></div>
+          <div class="pred-block"><div class="pred-label">Tu predicción</div>${selectHtml}</div>
         </div>
       `;
     });
@@ -1060,7 +1054,11 @@ function renderElimBracketView() {
       const res=(cache.resultados.elim||{})[m.code];
       
       let selectHtml = '';
+      let resObj = null;
       if (res) {
+        if (typeof res === 'string' && res.startsWith('{')) {
+           try { resObj = JSON.parse(res); } catch(e) {}
+        }
         selectHtml = renderElimPredResultPill(pObj, res, m.code, displayLocal, displayVisitante);
       } else {
         selectHtml = renderElimInputsHtml(m.code, pObj, isMe, isLocked, displayLocal, displayVisitante);
@@ -1068,7 +1066,10 @@ function renderElimBracketView() {
 
       html += `
         <div class="bracket-match" style="min-height: 120px;">
-          <div class="bm-code">${m.code} <span style="font-size:9px;color:var(--text3);margin-left:4px">${m.fecha}</span></div>
+          <div class="bm-code" style="display:flex; justify-content:space-between; align-items:center;">
+             <span>${m.code} <span style="font-size:9px;color:var(--text3);margin-left:4px">${m.fecha}</span></span>
+             ${resObj ? `<span style="font-size:12px; font-weight:bold; background:var(--bg); padding:2px 6px; border-radius:4px; border:1px solid var(--border);">${resObj.gl} - ${resObj.gv}</span>` : ''}
+          </div>
           <div class="bm-team ${predWinner === displayLocal && predWinner ? 'winner' : ''}">${getFlagHtml(displayLocal)} ${displayLocal || '—'}</div>
           <div class="bm-team ${predWinner === displayVisitante && predWinner ? 'winner' : ''}">${getFlagHtml(displayVisitante)} ${displayVisitante || '—'}</div>
           <div style="margin-top:8px;">

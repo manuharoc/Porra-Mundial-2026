@@ -173,7 +173,17 @@ async function saveGlobalElim(code, local, visitante){
   const proEl = document.getElementById('sa_elim_'+code+'_pro');
   const penEl = document.getElementById('sa_elim_'+code+'_pen');
   
-  if(!lEl || !vEl || lEl.value === '' || vEl.value === '') { showToast('Introduce los goles'); return; }
+  if(!lEl || !vEl || lEl.value === '' || vEl.value === '') { 
+    const { error } = await sb.from('resultados_globales').delete().match({tipo:'elim', match_key:code});
+    if (error) { showToast('❌ Error: '+error.message); return; }
+    showToast('🗑️ Resultado borrado');
+    const { data } = await sb.from('resultados_globales').select('*');
+    const r={grupos:{},elim:{},especiales:{}};
+    for(const x of (data||[])){ r[x.tipo]=r[x.tipo]||{}; r[x.tipo][x.match_key]=x.valor; }
+    cache.resultados = r;
+    renderSuperadmin(r);
+    return;
+  }
   
   const gl = parseInt(lEl.value);
   const gv = parseInt(vEl.value);
