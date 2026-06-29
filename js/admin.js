@@ -199,7 +199,7 @@ async function saveGlobalElim(code, local, visitante){
     ganador = penaltis;
   }
   
-  const data = { gl, gv, prorroga, penaltis, ganador, local, visitante };
+  const data = { gl, gv, prorroga, penaltis, ganador, local, visitante, manual: true };
   const jsonStr = JSON.stringify(data);
 
   const { error } = await sb.from('resultados_globales').upsert({tipo:'elim',match_key:code,valor:jsonStr,updated_at:new Date().toISOString()},{onConflict:'tipo,match_key'});

@@ -134,6 +134,24 @@ module.exports = async (req, res) => {
       console.log("Error extracting ELIM_PHASES", err);
     }
 
+    let existingMap = {};
+    try {
+      const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/resultados_globales?select=*`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      const existingDb = await dbRes.json();
+      if (Array.isArray(existingDb)) {
+         for (const row of existingDb) {
+            existingMap[row.tipo + '_' + row.match_key] = row.valor;
+         }
+      }
+    } catch (e) {
+      console.log("Error fetching existing db", e);
+    }
+
     for (const match of apiData.response) {
       const statusState = match.status.type.state;
       // Skip matches that haven't started (pre)
@@ -211,6 +229,19 @@ module.exports = async (req, res) => {
       });
 
       if (matchKey) {
+        const tipoKey = isElim ? 'elim' : 'grupos';
+        const existingVal = existingMap[`${tipoKey}_${matchKey}`];
+        if (existingVal) {
+           let parsed = existingVal;
+           if (typeof existingVal === 'string' && existingVal.startsWith('{')) {
+              try { parsed = JSON.parse(existingVal); } catch(e){}
+           }
+           if (parsed && parsed.manual) {
+              matchDebug.push({ msg: `Skipping ${matchKey} because manual=true` });
+              continue;
+           }
+        }
+
         let payload = null;
 
         if (!isElim) {
