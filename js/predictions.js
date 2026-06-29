@@ -828,7 +828,7 @@ function renderElimInputsHtml(code, pObj, isMe, isLocked, displayLocal, displayV
         <input class="pred-inp" type="number" min="0" max="20" id="pi_elim_${code}_l" value="${gl}" placeholder="–" oninput="checkElimPredChanged('${code}')"${dStr}>
         <span class="pred-sep">–</span>
         <input class="pred-inp" type="number" min="0" max="20" id="pi_elim_${code}_v" value="${gv}" placeholder="–" oninput="checkElimPredChanged('${code}')"${dStr}>
-        ${(isMe && !isLocked) ? `<button class="pred-save ${pObj?'saved':''}" id="psb_elim_${code}" onclick="saveElimPredRow('${code}')">✓</button>` : ''}
+        ${(isMe && (!isLocked || isAdmin())) ? `<button class="pred-save ${pObj?'saved':''}" id="psb_elim_${code}" onclick="saveElimPredRow('${code}')">✓</button>` : ''}
       </div>
       <div style="display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text3);">
         <input type="checkbox" id="pi_elim_${code}_pro" ${pro} onchange="checkElimPredChanged('${code}')" ${dStr}>

@@ -100,22 +100,22 @@ const GRUPOS = [
 
 const ELIM_PHASES = [
   {name:'🔵 Ronda de 32 — Dieciseisavos',partidos:[
-    {code:'M73',fecha:'28 jun',hora:'19:00',local:'2°A',visitante:'2°B',sede:'Los Ángeles'},
-    {code:'M74',fecha:'29 jun',hora:'19:00',local:'1°E',visitante:'3er C/D/F/G/H',sede:'Boston'},
-    {code:'M75',fecha:'29 jun',hora:'22:30',local:'1°F',visitante:'2°C',sede:'Monterrey'},
-    {code:'M76',fecha:'30 jun',hora:'03:00*',local:'1°C',visitante:'2°F',sede:'Houston'},
-    {code:'M77',fecha:'30 jun',hora:'19:00',local:'1°I',visitante:'3er A/B/C/D/E',sede:'Nueva Jersey'},
-    {code:'M78',fecha:'30 jun',hora:'23:00',local:'2°E',visitante:'2°I',sede:'Dallas'},
-    {code:'M79',fecha:'1 jul',hora:'03:00*',local:'1°A',visitante:'3er C/E/F/H/I',sede:'Ciudad de México'},
-    {code:'M80',fecha:'1 jul',hora:'18:00',local:'1°L',visitante:'3er E/H/I/J/K',sede:'Atlanta'},
-    {code:'M81',fecha:'1 jul',hora:'22:00',local:'1°D',visitante:'3er B/D/F/I/J',sede:'Santa Clara'},
-    {code:'M82',fecha:'2 jul',hora:'02:00*',local:'1°G',visitante:'3er A/E/H/I/J',sede:'Seattle'},
-    {code:'M83',fecha:'2 jul',hora:'21:00',local:'2°K',visitante:'2°L',sede:'Toronto'},
-    {code:'M84',fecha:'3 jul',hora:'01:00*',local:'1°H',visitante:'2°J',sede:'Los Ángeles'},
-    {code:'M85',fecha:'3 jul',hora:'05:00*',local:'1°B',visitante:'3er E/F/G/I/J',sede:'Vancouver'},
-    {code:'M86',fecha:'3 jul',hora:'20:00',local:'1°J',visitante:'2°H',sede:'Miami'},
-    {code:'M87',fecha:'4 jul',hora:'00:00*',local:'1°K',visitante:'3er D/E/I/J/L',sede:'Kansas City'},
-    {code:'M88',fecha:'4 jul',hora:'03:30*',local:'2°D',visitante:'2°G',sede:'Dallas'}
+    {code:'M73',fecha:'29 jun',hora:'05:00*',local:'2°A',visitante:'2°B',sede:'Los Ángeles'},
+    {code:'M74',fecha:'30 jun',hora:'03:30*',local:'1°E',visitante:'3er C/D/F/G/H',sede:'Boston'},
+    {code:'M75',fecha:'30 jun',hora:'02:00*',local:'1°F',visitante:'2°C',sede:'Monterrey'},
+    {code:'M76',fecha:'30 jun',hora:'01:00*',local:'1°C',visitante:'2°F',sede:'Houston'},
+    {code:'M77',fecha:'1 jul',hora:'04:00*',local:'1°I',visitante:'3er A/B/C/D/E',sede:'Nueva Jersey'},
+    {code:'M78',fecha:'1 jul',hora:'01:00*',local:'2°E',visitante:'2°I',sede:'Dallas'},
+    {code:'M79',fecha:'1 jul',hora:'02:00*',local:'1°A',visitante:'3er C/E/F/H/I',sede:'Ciudad de México'},
+    {code:'M80',fecha:'1 jul',hora:'23:00',local:'1°L',visitante:'3er E/H/I/J/K',sede:'Atlanta'},
+    {code:'M81',fecha:'2 jul',hora:'01:00*',local:'1°D',visitante:'3er B/D/F/I/J',sede:'Santa Clara'},
+    {code:'M82',fecha:'2 jul',hora:'06:00*',local:'1°G',visitante:'3er A/E/H/I/J',sede:'Seattle'},
+    {code:'M83',fecha:'3 jul',hora:'00:00*',local:'2°K',visitante:'2°L',sede:'Toronto'},
+    {code:'M84',fecha:'3 jul',hora:'05:00*',local:'1°H',visitante:'2°J',sede:'Los Ángeles'},
+    {code:'M85',fecha:'3 jul',hora:'04:00*',local:'1°B',visitante:'3er E/F/G/I/J',sede:'Vancouver'},
+    {code:'M86',fecha:'3 jul',hora:'23:00',local:'1°J',visitante:'2°H',sede:'Miami'},
+    {code:'M87',fecha:'4 jul',hora:'02:30*',local:'1°K',visitante:'3er D/E/I/J/L',sede:'Kansas City'},
+    {code:'M88',fecha:'4 jul',hora:'02:00*',local:'2°D',visitante:'2°G',sede:'Dallas'}
   ]},
   {name:'🟢 Octavos de Final',partidos:[
     {code:'M89',fecha:'4 jul',hora:'19:00',local:'W73',visitante:'W77',sede:'Filadelfia'},
@@ -165,7 +165,10 @@ const DEFAULT_PTS = [
   {fase:'Subcampeón',desc:'Subcampeón correcto',pts:12},
   {fase:'Campeón 🏆',desc:'Campeón del mundo',pts:20},
   {fase:'Pichichi',desc:'Máximo goleador',pts:10},
-  {fase:'3er puesto',desc:'3er clasificado correcto',pts:8}
+  {fase:'3er puesto',desc:'3er clasificado correcto',pts:8},
+  {fase:'Eliminatorias',desc:'Resultado exacto (Sólo modo Interactivo)',pts:5},
+  {fase:'Eliminatorias',desc:'Acierto prórroga (Sólo modo Interactivo)',pts:2},
+  {fase:'Eliminatorias',desc:'Acierto ganador penaltis (Sólo modo Interactivo)',pts:3}
 ];
 
 const DEFAULT_NORMAS = [
