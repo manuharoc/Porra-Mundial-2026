@@ -219,8 +219,8 @@ function renderPredInputsHtml(key){
 
   const glVal = isSaved ? saved.gl : '';
   const gvVal = isSaved ? saved.gv : '';
-  const disStr = (isMe && !isLocked) ? '' : ' disabled';
-  const btnHtml = (isMe && !isLocked) ? `<button class="pred-save ${isSaved?'saved':''}" id="psb_${key}" onclick="savePredGrupo('${key}')">✓</button>` : '';
+  const disStr = (isMe && (!isLocked || isAdmin())) ? '' : ' disabled';
+  const btnHtml = (isMe && (!isLocked || isAdmin())) ? `<button class="pred-save ${isSaved?'saved':''}" id="psb_${key}" onclick="savePredGrupo('${key}')">✓</button>` : '';
   return `<div class="pred-inputs">
     <input class="pred-inp" type="number" min="0" max="20" id="pi_${key}_l" value="${glVal}" placeholder="–" oninput="checkPredChanged('${key}')"${disStr}>
     <span class="pred-sep">–</span>
@@ -244,9 +244,27 @@ async function savePredGrupo(key){
   const uid=currentViewUser;
   if(!uid){ showToast('Selecciona un participante primero'); return; }
   if(uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
-  if(getMatchLockStatusByKey(key, false)) { showToast('❌ Este partido ya está bloqueado'); return; }
+  if(getMatchLockStatusByKey(key, false) && !isAdmin()) { showToast('❌ Este partido ya está bloqueado'); return; }
   const l=document.getElementById('pi_'+key+'_l'), v=document.getElementById('pi_'+key+'_v');
-  if(!l||!v||l.value===''||v.value===''){ showToast('Introduce el marcador'); return; }
+  if(!l||!v||l.value===''||v.value===''){ 
+    if (cache.predicciones[uid] && cache.predicciones[uid].grupos) {
+       delete cache.predicciones[uid].grupos[key];
+    }
+    await sb.from('predicciones_grupos').delete().match({participante_id:uid, match_key:key});
+    showToast('🗑️ Predicción borrada');
+    
+    r32Memo.ts = 0;
+    const crucesOld = JSON.stringify(getPredictedR32(uid));
+    
+    // Si altera cruces, borramos elim
+    if (Object.keys(cache.predicciones[uid]?.elim || {}).length > 0) {
+       cache.predicciones[uid].elim = {};
+       await sb.from('predicciones_elim').delete().eq('participante_id', uid);
+       showToast('⚠️ Cruces alterados. Eliminatorias reiniciadas.');
+    }
+    renderGruposPred();
+    return; 
+  }
   const gl=parseInt(l.value), gv=parseInt(v.value);
   
   r32Memo.ts = 0;
