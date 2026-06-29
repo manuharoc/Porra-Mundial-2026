@@ -527,15 +527,15 @@ function getPredictedR32(uid) {
   let usedGroups = new Set();
   
   const groupsInTop8 = top8Thirds.map(t => t.group).sort().join('');
-  if (groupsInTop8 === 'BEFGHIKL') {
-    mapping['3er C/D/F/G/H'] = top8Thirds.find(t=>t.group==='F').team.name;
-    mapping['3er A/B/C/D/E'] = top8Thirds.find(t=>t.group==='E').team.name;
-    mapping['3er C/E/F/H/I'] = top8Thirds.find(t=>t.group==='I').team.name;
-    mapping['3er E/H/I/J/K'] = top8Thirds.find(t=>t.group==='K').team.name;
-    mapping['3er B/D/F/I/J'] = top8Thirds.find(t=>t.group==='B').team.name;
-    mapping['3er A/E/H/I/J'] = top8Thirds.find(t=>t.group==='H').team.name;
-    mapping['3er E/F/G/I/J'] = top8Thirds.find(t=>t.group==='G').team.name;
-    mapping['3er D/E/I/J/L'] = top8Thirds.find(t=>t.group==='L').team.name;
+  if (groupsInTop8 === 'BDEFIJKL') {
+    mapping['3er C/D/F/G/H'] = top8Thirds.find(t=>t.group==='D').team.name; // Paraguay M74
+    mapping['3er A/B/C/D/E'] = top8Thirds.find(t=>t.group==='F').team.name; // Suecia M77
+    mapping['3er C/E/F/H/I'] = top8Thirds.find(t=>t.group==='E').team.name; // Ecuador M79
+    mapping['3er E/H/I/J/K'] = top8Thirds.find(t=>t.group==='K').team.name; // RD Congo M80
+    mapping['3er B/D/F/I/J'] = top8Thirds.find(t=>t.group==='B').team.name; // Bosnia M81
+    mapping['3er A/E/H/I/J'] = top8Thirds.find(t=>t.group==='I').team.name; // Senegal M82
+    mapping['3er E/F/G/I/J'] = top8Thirds.find(t=>t.group==='J').team.name; // Argelia M85
+    mapping['3er D/E/I/J/L'] = top8Thirds.find(t=>t.group==='L').team.name; // Ghana M87
     
     r32Memo = { uid, map: mapping, ts: Date.now() };
     return mapping;
