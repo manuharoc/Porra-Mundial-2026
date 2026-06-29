@@ -681,33 +681,63 @@ function resolveActualTeamForSlot(slot) {
 
   const elimRes = cache.resultados.elim || {};
 
+  const getWinner = (val) => {
+    if (!val) return null;
+    if (val.startsWith('{')) {
+      try { return JSON.parse(val).ganador; } catch(e){}
+    }
+    return val;
+  };
+
   if (slot.startsWith('W')) {
     const code = 'M' + slot.slice(1);
-    return elimRes[code] || slot;
+    return getWinner(elimRes[code]) || slot;
   }
-  if (slot === 'Ganador SF1') return elimRes['M101'] || slot;
-  if (slot === 'Ganador SF2') return elimRes['M102'] || slot;
+  if (slot === 'Ganador SF1') return getWinner(elimRes['M101']) || slot;
+  if (slot === 'Ganador SF2') return getWinner(elimRes['M102']) || slot;
   if (slot === 'Perdedor SF1') {
-    const winner = elimRes['M101'];
+    const winner = getWinner(elimRes['M101']);
     if (winner) {
-      const m101 = findMatchInPhases('M101');
-      if (m101) {
-        const local = resolveActualTeamForSlot(m101.local);
-        const visitante = resolveActualTeamForSlot(m101.visitante);
-        return winner === local ? visitante : local;
+      let local = 'W97';
+      let visitante = 'W98';
+      const m101Res = elimRes['M101'];
+      if (m101Res && m101Res.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(m101Res);
+          local = parsed.local;
+          visitante = parsed.visitante;
+        } catch(e){}
+      } else {
+        const m101 = findMatchInPhases('M101');
+        if (m101) {
+          local = resolveActualTeamForSlot(m101.local);
+          visitante = resolveActualTeamForSlot(m101.visitante);
+        }
       }
+      return winner === local ? visitante : local;
     }
     return slot;
   }
   if (slot === 'Perdedor SF2') {
-    const winner = elimRes['M102'];
+    const winner = getWinner(elimRes['M102']);
     if (winner) {
-      const m102 = findMatchInPhases('M102');
-      if (m102) {
-        const local = resolveActualTeamForSlot(m102.local);
-        const visitante = resolveActualTeamForSlot(m102.visitante);
-        return winner === local ? visitante : local;
+      let local = 'W99';
+      let visitante = 'W100';
+      const m102Res = elimRes['M102'];
+      if (m102Res && m102Res.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(m102Res);
+          local = parsed.local;
+          visitante = parsed.visitante;
+        } catch(e){}
+      } else {
+        const m102 = findMatchInPhases('M102');
+        if (m102) {
+          local = resolveActualTeamForSlot(m102.local);
+          visitante = resolveActualTeamForSlot(m102.visitante);
+        }
       }
+      return winner === local ? visitante : local;
     }
     return slot;
   }
