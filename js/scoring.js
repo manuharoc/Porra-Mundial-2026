@@ -122,10 +122,10 @@ function calcScore(uid){
        else if(m===104) roundPoints+=ptsFinal;
     }
     
-    if (pObj && rObj) {
-       if (pObj.gl === rObj.gl && pObj.gv === rObj.gv) roundPoints += 5;
-       if (rObj.prorroga && pObj.prorroga === true) roundPoints += 2;
-       if (rObj.penaltis && pObj.penaltis === rObj.penaltis) roundPoints += 3;
+    if (pObj && rObj && cache.configModo === 'interactivo') {
+       if (pObj.gl === rObj.gl && pObj.gv === rObj.gv) roundPoints += getNormaPts('Eliminatorias', 'exacto', 5);
+       if (rObj.prorroga && pObj.prorroga === true) roundPoints += getNormaPts('Eliminatorias', 'prórroga', 2);
+       if (rObj.penaltis && pObj.penaltis === rObj.penaltis) roundPoints += getNormaPts('Eliminatorias', 'penaltis', 3);
     }
     
     if(m>=73&&m<=88) r32+=roundPoints;

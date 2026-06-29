@@ -59,10 +59,8 @@ function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos) {
   const inicioEliminatorias = new Date(2026, 5, 29, 19, 0, 0).getTime();
   const now = new Date().getTime();
 
-  if (modo === 'dificil') return now > inicioTorneo;
-  if (modo === 'interactivo') return isGrupos ? (now > inicioTorneo) : (now > inicioEliminatorias);
-  if (modo === 'flexible') {
-    if (!matchDateStr || !matchTimeStr) return false;
+  let individualLock = false;
+  if (matchDateStr && matchTimeStr) {
     const parts = matchDateStr.split(' ');
     const day = parseInt(parts[0]);
     const month = parts[1].startsWith('jun') ? 5 : 6;
@@ -71,9 +69,12 @@ function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos) {
     let h = parseInt(tParts[0]);
     let m = parseInt(tParts[1]);
     const matchTime = new Date(2026, month, day, h, m, 0).getTime();
-    return now > matchTime;
+    individualLock = now > matchTime;
   }
-  return false;
+
+  if (modo === 'dificil') return (now > inicioTorneo) || individualLock;
+  if (modo === 'interactivo') return (isGrupos ? (now > inicioTorneo) : (now > inicioEliminatorias)) || individualLock;
+  return individualLock;
 }
 
 function getMatchLockStatusByKey(key, isElim) {

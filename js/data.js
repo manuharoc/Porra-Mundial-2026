@@ -51,6 +51,13 @@ async function loadAllData(){
       let normas = rawNormas.length > 0 ? rawNormas[rawNormas.length-1].datos : null;
       if(!normas || normas.length === 0 || !Array.isArray(normas)) normas = JSON.parse(JSON.stringify(DEFAULT_NORMAS));
       
+      // Asegurar que las nuevas normas de eliminatoria interactiva existen
+      if (!pts.find(p => p.fase === 'Eliminatorias' && p.desc.includes('exacto'))) {
+        pts.push({fase:'Eliminatorias',desc:'Resultado exacto (Sólo modo Interactivo)',pts:5});
+        pts.push({fase:'Eliminatorias',desc:'Acierto prórroga (Sólo modo Interactivo)',pts:2});
+        pts.push({fase:'Eliminatorias',desc:'Acierto ganador penaltis (Sólo modo Interactivo)',pts:3});
+      }
+      
       cache.normas = { pts, normas };
     cache.normasRaw = normasData;
     const bonusRow = normasData.find(n=>n.tipo==='bonus_aciertos');
