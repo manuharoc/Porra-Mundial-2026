@@ -1,7 +1,7 @@
 // ===================== PRED GRUPOS HELPERS =====================
 function getPredictedStandings(uid) {
   const standings = {};
-  const preds = (cache.predicciones[uid] || {}).grupos || {};
+  const preds = uid ? ((cache.predicciones[uid] || {}).grupos || {}) : (cache.resultados.grupos || {});
 
   GRUPOS.forEach(g => {
     standings[g.id] = g.equipos.map(eq => ({ name: eq, pj: 0, pts: 0, gf: 0, gc: 0, gd: 0 }));
@@ -543,7 +543,9 @@ function resolveTeamForSlot(slot, uid) {
   if (!uid) return slot;
 
   if (slot.match(/^[12]°[A-L]$/) || slot.startsWith('3er')) {
-    const r32Map = getPredictedR32(uid);
+    const modo = cache.configModo || 'interactivo';
+    const useUid = modo === 'interactivo' ? null : uid;
+    const r32Map = getPredictedR32(useUid);
     if (r32Map[slot]) return r32Map[slot];
   }
 
@@ -637,6 +639,11 @@ function resolveTeamForSlot(slot, uid) {
 
 function resolveActualTeamForSlot(slot) {
   if (ALL_TEAMS.includes(slot)) return slot;
+
+  if (slot.match(/^[12]°[A-L]$/) || slot.startsWith('3er')) {
+    const r32Map = getPredictedR32(null);
+    if (r32Map[slot]) return r32Map[slot];
+  }
 
   const elimRes = cache.resultados.elim || {};
 

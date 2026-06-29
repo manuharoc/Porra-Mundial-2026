@@ -105,8 +105,8 @@ function renderInsights() {
 
   let nextMatchHtml = '<div class="stat-sub">Sin partidos próximos</div>';
   if (nextMatch) {
-    let localName = nextMatch.isElim ? (resolveTeamForSlot(nextMatch.local, null) || nextMatch.local) : nextMatch.local;
-    let visitName = nextMatch.isElim ? (resolveTeamForSlot(nextMatch.visitante, null) || nextMatch.visitante) : nextMatch.visitante;
+    let localName = nextMatch.isElim ? (resolveActualTeamForSlot(nextMatch.local) || nextMatch.local) : nextMatch.local;
+    let visitName = nextMatch.isElim ? (resolveActualTeamForSlot(nextMatch.visitante) || nextMatch.visitante) : nextMatch.visitante;
 
     let localW = 0, draw = 0, visitW = 0, totalP = 0;
     Object.values(cache.predicciones).forEach(p => {
@@ -207,8 +207,8 @@ function renderCalendar(dateStr) {
     // Short name
     let shortName = phase.name.replace(/^[🏆🥉🟣🟢🟠🔵] /,'').split(' —')[0];
     phase.partidos.forEach(m => {
-      const localResolved = resolveTeamForSlot(m.local, null) || m.local;
-      const visitanteResolved = resolveTeamForSlot(m.visitante, null) || m.visitante;
+      const localResolved = resolveActualTeamForSlot(m.local) || m.local;
+      const visitanteResolved = resolveActualTeamForSlot(m.visitante) || m.visitante;
       const res = (cache.resultados.elim || {})[m.code];
       const isPlayed = !!res;
       const resultText = isPlayed ? `✓ ${res}` : '';
