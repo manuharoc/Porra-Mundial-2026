@@ -209,7 +209,7 @@ module.exports = async (req, res) => {
         matchKey: matchKey, isElim: isElim, status: match.status.type.shortDetail
       });
 
-      if (matchKey && statusState === 'post') {
+      if (matchKey) {
         let payload = null;
 
         if (!isElim) {

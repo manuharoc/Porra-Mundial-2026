@@ -303,9 +303,21 @@ function renderCalendar(dateStr) {
             const pElim = userPreds.elim?.[m.key];
             if (pElim) {
                let winner = pElim;
-               try { if (winner.startsWith('{')) winner = JSON.parse(winner).ganador; } catch(e){}
+               let gl, gv;
+               try { 
+                 if (winner.startsWith('{')) {
+                   const obj = JSON.parse(winner);
+                   winner = obj.ganador;
+                   gl = obj.gl;
+                   gv = obj.gv;
+                 } 
+               } catch(e){}
                if (winner) {
-                  predVal = `<span style="font-weight:600">${ALL_TEAMS.includes(winner) ? getFlagHtml(winner) : ''}${winner}</span>`;
+                  if (gl !== undefined) {
+                    predVal = `<span style="font-weight:700">${gl} - ${gv}</span> <span style="font-size:10px;color:var(--text3);margin-left:4px">Pasa ${winner}</span>`;
+                  } else {
+                    predVal = `<span style="font-weight:600">${ALL_TEAMS.includes(winner) ? getFlagHtml(winner) : ''}${winner}</span>`;
+                  }
                }
             }
           }
