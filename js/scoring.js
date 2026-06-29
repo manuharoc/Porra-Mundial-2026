@@ -30,11 +30,12 @@ function calcBonusAciertos(uid){
   // Aciertos en eliminatorias (ganador que pasa de ronda)
   for(const code in ePreds){
     let w = ePreds[code];
-    const r = eRes[code];
+    let r = eRes[code];
     if(!w || !r) continue;
-    if(w.startsWith('{')) {
-      try { w = JSON.parse(w).ganador; } catch(e){}
-    }
+    if(typeof w === 'object' && w !== null) { w = w.ganador; }
+    else if(typeof w === 'string' && w.startsWith('{')) { try { w = JSON.parse(w).ganador; } catch(e){} }
+    if(typeof r === 'object' && r !== null) { r = r.ganador; }
+    else if(typeof r === 'string' && r.startsWith('{')) { try { r = JSON.parse(r).ganador; } catch(e){} }
     if(w === r) totalHits++;
   }
 
@@ -104,10 +105,14 @@ function calcScore(uid){
     let predGanador = w;
     let resGanador = r;
     
-    if (w.startsWith('{')) {
+    if (typeof w === 'object' && w !== null) {
+      pObj = w; predGanador = pObj.ganador;
+    } else if (typeof w === 'string' && w.startsWith('{')) {
       try { pObj = JSON.parse(w); predGanador = pObj.ganador; } catch(e){}
     }
-    if (r.startsWith('{')) {
+    if (typeof r === 'object' && r !== null) {
+      rObj = r; resGanador = rObj.ganador;
+    } else if (typeof r === 'string' && r.startsWith('{')) {
       try { rObj = JSON.parse(r); resGanador = rObj.ganador; } catch(e){}
     }
     
@@ -128,8 +133,9 @@ function calcScore(uid){
     }
     
     if (pObj && rObj && cache.configModo === 'interactivo') {
-       let exact = pObj.gl === rObj.gl && pObj.gv === rObj.gv;
+       let exact = parseInt(pObj.gl) === parseInt(rObj.gl) && parseInt(pObj.gv) === parseInt(rObj.gv);
        if (exact) {
+           // Solo se pierden los 5 pts si el usuario marcó prórroga pero NO hubo prórroga
            let predictedProrrogaButNone = pObj.prorroga === true && !rObj.prorroga;
            if (!predictedProrrogaButNone) {
                roundPoints += getNormaPts('Eliminatorias', 'exacto', 5);
