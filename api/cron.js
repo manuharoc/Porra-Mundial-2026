@@ -123,6 +123,14 @@ module.exports = async (req, res) => {
       }
     } catch(err) {
       gruposExtractError = "Error evaluating GRUPOS: " + err.message;
+    let ELIM_PHASES = [];
+    try {
+      const matchElim = dataStr.match(/const\s+ELIM_PHASES\s*=\s*(\[\s*\{[\s\S]*?\]);\s*const\s+/);
+      if (matchElim) {
+        ELIM_PHASES = eval(matchElim[1]);
+      }
+    } catch(err) {
+      console.log("Error extracting ELIM_PHASES", err);
     }
 
     for (const match of apiData.response) {
@@ -141,9 +149,10 @@ module.exports = async (req, res) => {
       const homeEs = TEAM_MAP[homeTeamEng] || homeTeamEng;
       const awayEs = TEAM_MAP[awayTeamEng] || awayTeamEng;
 
-      // Find match_key
+      // Find match_key (first try GRUPOS by names)
       let matchKey = null;
-      let checkLog = [];
+      let isElim = false;
+
       for (const g of GRUPOS) {
         if (!g.partidos) continue;
         for (const p of g.partidos) {
@@ -159,23 +168,100 @@ module.exports = async (req, res) => {
         if (matchKey) break;
       }
 
+      // If not in GRUPOS, try ELIM_PHASES by match date & time proximity
+      if (!matchKey) {
+        const d = new Date(match.date);
+        const cestTime = new Date(d.getTime() + 2 * 3600 * 1000);
+        const day = cestTime.getUTCDate();
+        const month = cestTime.getUTCMonth() === 5 ? 'jun' : 'jul';
+        const hours = cestTime.getUTCHours();
+        const fechaStr = `${day} ${month}`;
+        const matchCestMinutes = hours * 60 + cestTime.getUTCMinutes();
+        
+        let minDiff = Infinity;
+        let bestElimMatch = null;
+
+        for (const phase of ELIM_PHASES) {
+          if (!phase.partidos) continue;
+          for (const p of phase.partidos) {
+            if (p.fecha === fechaStr) {
+               const cleanTime = p.hora.replace('*', '');
+               const parts = cleanTime.split(':');
+               const pMin = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+               const diff = Math.abs(matchCestMinutes - pMin);
+               if (diff < 120 && diff < minDiff) {
+                  minDiff = diff;
+                  bestElimMatch = p;
+               }
+            }
+          }
+        }
+        
+        if (bestElimMatch) {
+          matchKey = bestElimMatch.code;
+          isElim = true;
+        }
+      }
+
       matchDebug.push({
         homeEng: homeTeamEng, awayEng: awayTeamEng,
         homeEs: homeEs, awayEs: awayEs,
-        homeNorm: normalizeName(homeEs), awayNorm: normalizeName(awayEs),
-        matchKey: matchKey, status: match.status.type.shortDetail
+        matchKey: matchKey, isElim: isElim, status: match.status.type.shortDetail
       });
 
-      if (matchKey) {
-        // Upsert to Supabase
-        const upsertUrl = `${SUPABASE_URL}/rest/v1/resultados_globales?on_conflict=tipo,match_key`;
-        const payload = {
-          tipo: 'grupos',
-          match_key: matchKey,
-          valor: { gl: goalsHome.toString(), gv: goalsAway.toString() },
-          updated_at: new Date().toISOString()
-        };
+      if (matchKey && statusState === 'post') {
+        let payload = null;
 
+        if (!isElim) {
+          payload = {
+            tipo: 'grupos',
+            match_key: matchKey,
+            valor: { gl: goalsHome.toString(), gv: goalsAway.toString() },
+            updated_at: new Date().toISOString()
+          };
+        } else {
+          let prorroga = false;
+          let penaltis = null;
+          
+          const typeName = match.status.type.name || '';
+          const typeDesc = match.status.type.description || '';
+          if (typeName.includes('AET') || typeName.includes('SHOOTOUT') || typeDesc.includes('Extra Time') || typeDesc.includes('Penal')) {
+             prorroga = true;
+          }
+
+          const homeWon = homeComp.winner === true;
+          const awayWon = awayComp.winner === true;
+          let winnerEs = null;
+          
+          if (!homeWon && !awayWon) {
+             if (parseInt(goalsHome) > parseInt(goalsAway)) winnerEs = homeEs;
+             else if (parseInt(goalsAway) > parseInt(goalsHome)) winnerEs = awayEs;
+          } else {
+             winnerEs = homeWon ? homeEs : awayEs;
+          }
+          
+          if (homeComp.shootoutScore !== undefined || typeName.includes('SHOOTOUT')) {
+             prorroga = true;
+             penaltis = winnerEs;
+          }
+
+          const elimVal = {
+             gl: parseInt(goalsHome),
+             gv: parseInt(goalsAway),
+             prorroga: prorroga,
+             penaltis: penaltis,
+             ganador: winnerEs
+          };
+          
+          payload = {
+            tipo: 'elim',
+            match_key: matchKey,
+            valor: JSON.stringify(elimVal),
+            updated_at: new Date().toISOString()
+          };
+        }
+
+        const upsertUrl = `${SUPABASE_URL}/rest/v1/resultados_globales?on_conflict=tipo,match_key`;
         const res = await fetch(upsertUrl, {
           method: 'POST',
           headers: {
