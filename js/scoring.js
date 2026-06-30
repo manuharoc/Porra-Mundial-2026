@@ -145,8 +145,6 @@ function calcScore(uid){
        if (rObj.prorroga && !rObj.penaltis && pObj.prorroga === true) roundPoints += getNormaPts('Eliminatorias', 'prórroga', 2);
        // 3 pts por predecir que llega a penaltis (haber marcado un equipo ganador en penaltis)
        if (rObj.penaltis && pObj.penaltis) roundPoints += getNormaPts('Eliminatorias', 'penaltis', 3);
-       // 5 pts adicionales si además aciertas qué equipo pasa en penaltis
-       if (rObj.penaltis && pObj.penaltis && pObj.penaltis === rObj.penaltis) roundPoints += 5;
     }
     
     if(m>=73&&m<=88) r32+=roundPoints;

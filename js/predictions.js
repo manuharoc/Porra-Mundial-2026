@@ -946,8 +946,6 @@ function renderElimPredResultPill(pObj, rObjStr, code, displayLocal, displayVisi
     if (rObj.prorroga && !rObj.penaltis && pObj.prorroga) { proPts = getNormaPts('Eliminatorias', 'prórroga', 2); pts += proPts; }
     // 3 pts por predecir que llega a penaltis
     if (rObj.penaltis && pObj.penaltis) { penPts = getNormaPts('Eliminatorias', 'penaltis', 3); pts += penPts; }
-    // 5 pts adicionales si además aciertas el equipo que pasa en penaltis
-    if (rObj.penaltis && pObj.penaltis && pObj.penaltis === rObj.penaltis) { pts += 5; }
   }
 
   let cls = 'pred-wrong';
