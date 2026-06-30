@@ -57,6 +57,10 @@ async function loadAllData(){
         pts.push({fase:'Eliminatorias',desc:'Acierto prórroga (Sólo modo Interactivo)',pts:2});
         pts.push({fase:'Eliminatorias',desc:'Acierto ganador penaltis (Sólo modo Interactivo)',pts:3});
       }
+      // Asegurar que existe la norma de bonus por acertar equipo en penaltis
+      if (!pts.find(p => p.fase === 'Eliminatorias' && p.desc.includes('bonus') && p.desc.toLowerCase().includes('penaltis'))) {
+        pts.push({fase:'Eliminatorias',desc:'Acierto equipo pasa en penaltis (bonus, Sólo modo Interactivo)',pts:5});
+      }
       
       cache.normas = { pts, normas };
     cache.normasRaw = normasData;

@@ -168,7 +168,8 @@ const DEFAULT_PTS = [
   {fase:'3er puesto',desc:'3er clasificado correcto',pts:8},
   {fase:'Eliminatorias',desc:'Resultado exacto (Sólo modo Interactivo)',pts:5},
   {fase:'Eliminatorias',desc:'Acierto prórroga (Sólo modo Interactivo)',pts:2},
-  {fase:'Eliminatorias',desc:'Acierto ganador penaltis (Sólo modo Interactivo)',pts:3}
+  {fase:'Eliminatorias',desc:'Acierto ganador penaltis (Sólo modo Interactivo)',pts:3},
+  {fase:'Eliminatorias',desc:'Acierto equipo pasa en penaltis (bonus, Sólo modo Interactivo)',pts:5}
 ];
 
 const DEFAULT_NORMAS = [
