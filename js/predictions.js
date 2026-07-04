@@ -53,14 +53,29 @@ function checkPredChanged(key) {
 }
 
 // ===================== PRED GRUPOS =====================
-function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos) {
-  const globalDeadline = new Date(2026, 5, 29, 19, 0, 0).getTime(); // 29 de Junio de 2026, 19:00 CEST
+function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos, matchCode) {
   const now = new Date().getTime();
+
+  // Per-phase deadlines (CEST)
+  const PHASE_DEADLINES = {
+    octavos: new Date(2026, 6, 4, 19, 0, 0).getTime(),  // 4 de Julio de 2026, 19:00 CEST
+  };
+
+  // Check if the match belongs to Octavos (M89–M96)
+  if (matchCode) {
+    const num = parseInt(matchCode.replace('M', ''));
+    if (num >= 89 && num <= 96) {
+      return now > PHASE_DEADLINES.octavos;
+    }
+  }
+
+  const globalDeadline = new Date(2026, 5, 29, 19, 0, 0).getTime(); // 29 de Junio de 2026, 19:00 CEST
   return now > globalDeadline;
 }
 
 function getMatchLockStatusByKey(key, isElim) {
   let match = null;
+  let matchCode = null;
   if (!isElim) {
     const parts = key.split('_');
     const gId = parts[0].replace('G', '');
@@ -68,13 +83,14 @@ function getMatchLockStatusByKey(key, isElim) {
     const g = GRUPOS.find(x => x.id === gId);
     if(g) match = g.partidos.find(x => x.n === mN);
   } else {
+    matchCode = key;
     for (const ph of ELIM_PHASES) {
       match = ph.partidos.find(x => x.code === key);
       if (match) break;
     }
   }
   if (!match) return false;
-  return getMatchLockStatus(match.fecha, match.hora, !isElim);
+  return getMatchLockStatus(match.fecha, match.hora, !isElim, matchCode);
 }
 
 function renderGruposPred(){
@@ -507,7 +523,7 @@ function getPredictedR32(uid) {
     mapping['1°L'] = 'Inglaterra';
     mapping['2°L'] = 'Croacia';
 
-    mapping['3er C/D/F/G/H'] = 'Paraguay';
+    mapping['3er C/D/F/G/H'] = 'Canadá';
     mapping['3er A/B/C/D/E'] = 'Suecia';
     mapping['3er C/E/F/H/I'] = 'Ecuador';
     mapping['3er E/H/I/J/K'] = 'R.D. Congo';
