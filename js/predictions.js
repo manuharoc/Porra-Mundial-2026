@@ -632,6 +632,21 @@ function resolveTeamForSlot(slot, uid) {
 
   if (slot.startsWith('W')) {
     const code = 'M' + slot.slice(1);
+    const matchNum = parseInt(slot.slice(1));
+
+    // In interactive mode, R32 winners (W73–W88) come from actual results, not user predictions
+    const modo = cache.configModo || 'interactivo';
+    if (modo === 'interactivo' && matchNum >= 73 && matchNum <= 88) {
+      const actualRes = (cache.resultados.elim || {})[code];
+      if (actualRes) {
+        if (typeof actualRes === 'string' && actualRes.startsWith('{')) {
+          try { return JSON.parse(actualRes).ganador || slot; } catch(e){}
+        }
+        return actualRes;
+      }
+      return slot;
+    }
+
     const predVal = elimPreds[code];
     if (predVal) {
       if (predVal.startsWith('{')) {
