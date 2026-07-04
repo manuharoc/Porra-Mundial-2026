@@ -759,6 +759,32 @@ function resolveActualTeamForSlot(slot) {
 
   if (slot.startsWith('W')) {
     const code = 'M' + slot.slice(1);
+    const matchNum = parseInt(slot.slice(1));
+    
+    // In interactive mode, R32 winners (W73–W88) are hardcoded to real tournament results
+    const modo = cache.configModo || 'interactivo';
+    if (modo === 'interactivo' && matchNum >= 73 && matchNum <= 88) {
+      const R32_WINNERS = {
+        'M73': 'Paraguay',
+        'M74': 'Canadá',
+        'M75': 'Marruecos',
+        'M76': 'Brasil',
+        'M77': 'Francia',
+        'M78': 'Noruega',
+        'M79': 'México',
+        'M80': 'Inglaterra',
+        'M81': 'Estados Unidos',
+        'M82': 'Bélgica',
+        'M83': 'Portugal',
+        'M84': 'España',
+        'M85': 'Suiza',
+        'M86': 'Argentina',
+        'M87': 'Colombia',
+        'M88': 'Egipto'
+      };
+      return R32_WINNERS[code] || slot;
+    }
+
     return getWinner(elimRes[code]) || slot;
   }
   if (slot === 'Ganador SF1') return getWinner(elimRes['M101']) || slot;
