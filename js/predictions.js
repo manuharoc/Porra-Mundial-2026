@@ -523,7 +523,7 @@ function getPredictedR32(uid) {
     mapping['1°L'] = 'Inglaterra';
     mapping['2°L'] = 'Croacia';
 
-    mapping['3er C/D/F/G/H'] = 'Canadá';
+    mapping['3er C/D/F/G/H'] = 'Paraguay';
     mapping['3er A/B/C/D/E'] = 'Suecia';
     mapping['3er C/E/F/H/I'] = 'Ecuador';
     mapping['3er E/H/I/J/K'] = 'R.D. Congo';
@@ -634,17 +634,28 @@ function resolveTeamForSlot(slot, uid) {
     const code = 'M' + slot.slice(1);
     const matchNum = parseInt(slot.slice(1));
 
-    // In interactive mode, R32 winners (W73–W88) come from actual results, not user predictions
+    // In interactive mode, R32 winners (W73–W88) are hardcoded to real tournament results
     const modo = cache.configModo || 'interactivo';
     if (modo === 'interactivo' && matchNum >= 73 && matchNum <= 88) {
-      const actualRes = (cache.resultados.elim || {})[code];
-      if (actualRes) {
-        if (typeof actualRes === 'string' && actualRes.startsWith('{')) {
-          try { return JSON.parse(actualRes).ganador || slot; } catch(e){}
-        }
-        return actualRes;
-      }
-      return slot;
+      const R32_WINNERS = {
+        'M73': 'Canadá',           // Canadá venció a Sudáfrica
+        'M74': 'Paraguay',         // Paraguay venció a Alemania (pen)
+        'M75': 'Marruecos',        // Marruecos venció a Holanda (pen)
+        'M76': 'Brasil',           // Brasil venció a Japón
+        'M77': 'Francia',          // Francia venció a Suecia
+        'M78': 'Noruega',          // Noruega venció a Costa de Marfil
+        'M79': 'México',           // México venció a Ecuador
+        'M80': 'Inglaterra',       // Inglaterra venció a R.D. Congo
+        'M81': 'Estados Unidos',   // EE.UU. venció a Bosnia
+        'M82': 'Bélgica',          // Bélgica venció a Senegal
+        'M83': 'Portugal',         // Portugal venció a Croacia
+        'M84': 'España',           // España venció a Austria
+        'M85': 'Suiza',            // Suiza venció a Argelia
+        'M86': 'Argentina',        // Argentina venció a Cabo Verde (pró)
+        'M87': 'Colombia',         // Colombia venció a Ghana
+        'M88': 'Egipto'            // Egipto venció a Australia (pen)
+      };
+      return R32_WINNERS[code] || slot;
     }
 
     const predVal = elimPreds[code];
