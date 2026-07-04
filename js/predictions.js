@@ -867,64 +867,44 @@ async function saveElimPredRow(code) {
   if (uid !== getMyId()) { showToast('❌ No puedes modificar las predicciones de otro participante'); return; }
   if (getMatchLockStatusByKey(code, true) && !isAdmin()) { showToast('❌ Este partido ya está bloqueado'); return; }
 
-  const modo = cache.configModo || 'interactivo';
-  let jsonStr = '';
+  const lEl = document.getElementById(`pi_elim_${code}_l`);
+  const vEl = document.getElementById(`pi_elim_${code}_v`);
+  const proEl = document.getElementById(`pi_elim_${code}_pro`);
+  const penEl = document.getElementById(`pi_elim_${code}_pen`);
+
+  if (!lEl || !vEl || lEl.value === '' || vEl.value === '') { 
+    if (cache.predicciones[uid] && cache.predicciones[uid].elim) {
+      delete cache.predicciones[uid].elim[code];
+    }
+    const { error } = await sb.from('predicciones_elim').delete().match({participante_id: uid, match_code: code});
+    if (error) { showToast('❌ Error al borrar: '+error.message); return; }
+    showToast('🗑️ Predicción borrada');
+    renderElimPred();
+    return; 
+  }
+
+  const gl = parseInt(lEl.value);
+  const gv = parseInt(vEl.value);
+  const prorroga = proEl ? proEl.checked : false;
+  let penaltis = '';
 
   const m = findMatchInPhases(code);
   const local = resolveTeamForSlot(m.local, uid);
   const visitante = resolveTeamForSlot(m.visitante, uid);
 
-  if (modo === 'interactivo') {
-    const winnerEl = document.getElementById(`pi_elim_${code}_winner`);
-    if (!winnerEl || winnerEl.value === '') { 
-      if (cache.predicciones[uid] && cache.predicciones[uid].elim) {
-        delete cache.predicciones[uid].elim[code];
-      }
-      const { error } = await sb.from('predicciones_elim').delete().match({participante_id: uid, match_code: code});
-      if (error) { showToast('❌ Error al borrar: '+error.message); return; }
-      showToast('🗑️ Predicción borrada');
-      renderElimPred();
-      return; 
-    }
-    const ganador = winnerEl.value;
-    const data = { ganador, local, visitante };
-    jsonStr = JSON.stringify(data);
-  } else {
-    const lEl = document.getElementById(`pi_elim_${code}_l`);
-    const vEl = document.getElementById(`pi_elim_${code}_v`);
-    const proEl = document.getElementById(`pi_elim_${code}_pro`);
-    const penEl = document.getElementById(`pi_elim_${code}_pen`);
-
-    if (!lEl || !vEl || lEl.value === '' || vEl.value === '') { 
-      if (cache.predicciones[uid] && cache.predicciones[uid].elim) {
-        delete cache.predicciones[uid].elim[code];
-      }
-      const { error } = await sb.from('predicciones_elim').delete().match({participante_id: uid, match_code: code});
-      if (error) { showToast('❌ Error al borrar: '+error.message); return; }
-      showToast('🗑️ Predicción borrada');
-      renderElimPred();
-      return; 
-    }
-
-    const gl = parseInt(lEl.value);
-    const gv = parseInt(vEl.value);
-    const prorroga = proEl ? proEl.checked : false;
-    let penaltis = '';
-
-    let ganador = '';
-    if (gl > gv) ganador = local;
-    else if (gv > gl) ganador = visitante;
-    else {
-      penaltis = penEl ? penEl.value : '';
-      if (!penaltis) { showToast('Selecciona quién gana en los penaltis'); return; }
-      ganador = penaltis;
-    }
-
-    const data = { gl, gv, prorroga, penaltis, ganador, local, visitante };
-    jsonStr = JSON.stringify(data);
+  let ganador = '';
+  if (gl > gv) ganador = local;
+  else if (gv > gl) ganador = visitante;
+  else {
+    penaltis = penEl ? penEl.value : '';
+    if (!penaltis) { showToast('Selecciona quién gana en los penaltis'); return; }
+    ganador = penaltis;
   }
 
   if (!cache.predicciones[uid]) cache.predicciones[uid] = { grupos:{}, elim:{}, especiales:{}, especialesTs:{} };
+
+  const data = { gl, gv, prorroga, penaltis, ganador, local, visitante };
+  const jsonStr = JSON.stringify(data);
   cache.predicciones[uid].elim[code] = jsonStr;
 
   const btn = document.getElementById(`psb_elim_${code}`);
@@ -951,13 +931,6 @@ async function saveElimPredRow(code) {
 }
 
 function checkElimPredChanged(code) {
-  const modo = cache.configModo || 'interactivo';
-  if (modo === 'interactivo') {
-    const btn = document.getElementById(`psb_elim_${code}`);
-    if (btn) btn.classList.remove('saved');
-    return;
-  }
-
   const lEl = document.getElementById(`pi_elim_${code}_l`);
   const vEl = document.getElementById(`pi_elim_${code}_v`);
   const penContainer = document.getElementById(`pi_elim_${code}_pen_container`);
@@ -981,24 +954,6 @@ function renderElimInputsHtml(code, pObj, isMe, isLocked, displayLocal, displayV
   }
   
   const dStr = (isMe && (!isLocked || isAdmin())) ? '' : ' disabled';
-  const modo = cache.configModo || 'interactivo';
-
-  if (modo === 'interactivo') {
-    const winner = pObj ? pObj.ganador : '';
-    return `
-      <div class="elim-pred-inputs" style="display:flex; flex-direction:column; gap:6px; align-items:center; width:100%;">
-        <div style="display:flex; gap:4px; align-items:center; width:100%;">
-          <select id="pi_elim_${code}_winner" style="width:100%; font-size:12px; padding:6px; border-radius:4px; border:1px solid var(--border2); background:var(--s2); color:var(--text);" onchange="checkElimPredChanged('${code}')"${dStr}>
-            <option value="">— Equipo que pasa —</option>
-            ${displayLocal && ALL_TEAMS.includes(displayLocal) ? `<option value="${displayLocal}" ${winner === displayLocal ? 'selected' : ''}>${displayLocal}</option>` : ''}
-            ${displayVisitante && ALL_TEAMS.includes(displayVisitante) ? `<option value="${displayVisitante}" ${winner === displayVisitante ? 'selected' : ''}>${displayVisitante}</option>` : ''}
-          </select>
-          ${(isMe && (!isLocked || isAdmin())) ? `<button class="pred-save ${pObj?'saved':''}" id="psb_elim_${code}" onclick="saveElimPredRow('${code}')">✓</button>` : ''}
-        </div>
-      </div>
-    `;
-  }
-
   const gl = pObj && pObj.gl !== undefined ? pObj.gl : '';
   const gv = pObj && pObj.gv !== undefined ? pObj.gv : '';
   const pro = pObj && pObj.prorroga ? 'checked' : '';
