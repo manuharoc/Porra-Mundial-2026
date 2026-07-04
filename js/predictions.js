@@ -638,8 +638,8 @@ function resolveTeamForSlot(slot, uid) {
     const modo = cache.configModo || 'interactivo';
     if (modo === 'interactivo' && matchNum >= 73 && matchNum <= 88) {
       const R32_WINNERS = {
-        'M73': 'Canadá',           // Canadá venció a Sudáfrica
-        'M74': 'Paraguay',         // Paraguay venció a Alemania (pen)
+        'M73': 'Paraguay',         // Paraguay
+        'M74': 'Canadá',           // Canadá
         'M75': 'Marruecos',        // Marruecos venció a Holanda (pen)
         'M76': 'Brasil',           // Brasil venció a Japón
         'M77': 'Francia',          // Francia venció a Suecia
