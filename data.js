@@ -128,10 +128,10 @@ const ELIM_PHASES = [
     {code:'M96',fecha:'7 jul',hora:'22:00',local:'W85',visitante:'W87',sede:'Vancouver'}
   ]},
   {name:'🟣 Cuartos de Final',partidos:[
-    {code:'M97',fecha:'9 jul',hora:'22:00',local:'W89',visitante:'W90',sede:'Boston'},
-    {code:'M98',fecha:'10 jul',hora:'21:00',local:'W93',visitante:'W94',sede:'Los Ángeles'},
-    {code:'M99',fecha:'11 jul',hora:'23:00',local:'W91',visitante:'W92',sede:'Miami'},
-    {code:'M100',fecha:'12 jul',hora:'03:00*',local:'W95',visitante:'W96',sede:'Kansas City'}
+    {code:'M97',fecha:'9 jul',hora:'22:00',local:'Francia',visitante:'Marruecos',sede:'Boston'},
+    {code:'M98',fecha:'10 jul',hora:'21:00',local:'España',visitante:'Bélgica',sede:'Los Ángeles'},
+    {code:'M99',fecha:'11 jul',hora:'23:00',local:'Noruega',visitante:'Inglaterra',sede:'Miami'},
+    {code:'M100',fecha:'12 jul',hora:'03:00*',local:'Argentina',visitante:'Suiza',sede:'Kansas City'}
   ]},
   {name:'🟠 Semifinales',partidos:[
     {code:'M101',fecha:'14 jul',hora:'21:00',local:'W97',visitante:'W98',sede:'AT&T, Dallas'},
