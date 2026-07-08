@@ -59,7 +59,7 @@ function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos, matchCode) {
   // Per-phase deadlines (CEST)
   const PHASE_DEADLINES = {
     octavos: new Date(2026, 6, 4, 19, 0, 0).getTime(),  // 4 de Julio de 2026, 19:00 CEST
-    cuartos: new Date(2026, 6, 9, 9, 0, 0).getTime(),   // 9 de Julio de 2026, 09:00 CEST
+    cuartos: new Date(2026, 6, 9, 21, 0, 0).getTime(),  // 9 de Julio de 2026, 21:00 CEST
   };
 
   // Check if the match belongs to Octavos (M89–M96)
