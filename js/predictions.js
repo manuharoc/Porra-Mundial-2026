@@ -60,6 +60,7 @@ function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos, matchCode) {
   const PHASE_DEADLINES = {
     octavos: new Date(2026, 6, 4, 19, 0, 0).getTime(),  // 4 de Julio de 2026, 19:00 CEST
     cuartos: new Date(2026, 6, 9, 21, 0, 0).getTime(),  // 9 de Julio de 2026, 21:00 CEST
+    semis: new Date(2026, 6, 14, 20, 0, 0).getTime(),   // 14 de Julio de 2026, 20:00 CEST
   };
 
   // Check if the match belongs to Octavos (M89–M96)
@@ -70,6 +71,9 @@ function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos, matchCode) {
     }
     if (num >= 97 && num <= 100) {
       return now > PHASE_DEADLINES.cuartos;
+    }
+    if (num >= 101 && num <= 102) {
+      return now > PHASE_DEADLINES.semis;
     }
   }
 
@@ -640,26 +644,50 @@ function resolveTeamForSlot(slot, uid) {
 
     // In interactive mode, R32 winners (W73–W88) are hardcoded to real tournament results
     const modo = cache.configModo || 'interactivo';
-    if (modo === 'interactivo' && matchNum >= 73 && matchNum <= 88) {
-      const R32_WINNERS = {
-        'M73': 'Paraguay',         // Paraguay
-        'M74': 'Canadá',           // Canadá
-        'M75': 'Marruecos',        // Marruecos venció a Holanda (pen)
-        'M76': 'Brasil',           // Brasil venció a Japón
-        'M77': 'Francia',          // Francia venció a Suecia
-        'M78': 'Noruega',          // Noruega venció a Costa de Marfil
-        'M79': 'México',           // México venció a Ecuador
-        'M80': 'Inglaterra',       // Inglaterra venció a R.D. Congo
-        'M81': 'Estados Unidos',   // EE.UU. venció a Bosnia
-        'M82': 'Bélgica',          // Bélgica venció a Senegal
-        'M83': 'Portugal',         // Portugal venció a Croacia
-        'M84': 'España',           // España venció a Austria
-        'M85': 'Suiza',            // Suiza venció a Argelia
-        'M86': 'Argentina',        // Argentina venció a Cabo Verde (pró)
-        'M87': 'Colombia',         // Colombia venció a Ghana
-        'M88': 'Egipto'            // Egipto venció a Australia (pen)
-      };
-      return R32_WINNERS[code] || slot;
+    if (modo === 'interactivo') {
+      if (matchNum >= 73 && matchNum <= 88) {
+        const R32_WINNERS = {
+          'M73': 'Paraguay',         // Paraguay
+          'M74': 'Canadá',           // Canadá
+          'M75': 'Marruecos',        // Marruecos venció a Holanda (pen)
+          'M76': 'Brasil',           // Brasil venció a Japón
+          'M77': 'Francia',          // Francia venció a Suecia
+          'M78': 'Noruega',          // Noruega venció a Costa de Marfil
+          'M79': 'México',           // México venció a Ecuador
+          'M80': 'Inglaterra',       // Inglaterra venció a R.D. Congo
+          'M81': 'Estados Unidos',   // EE.UU. venció a Bosnia
+          'M82': 'Bélgica',          // Bélgica venció a Senegal
+          'M83': 'Portugal',         // Portugal venció a Croacia
+          'M84': 'España',           // España venció a Austria
+          'M85': 'Suiza',            // Suiza venció a Argelia
+          'M86': 'Argentina',        // Argentina venció a Cabo Verde (pró)
+          'M87': 'Colombia',         // Colombia venció a Ghana
+          'M88': 'Egipto'            // Egipto venció a Australia (pen)
+        };
+        return R32_WINNERS[code] || slot;
+      }
+      if (matchNum >= 89 && matchNum <= 96) {
+        const OCTAVOS_WINNERS = {
+          'M89': 'Francia',
+          'M90': 'Marruecos',
+          'M91': 'Noruega',
+          'M92': 'Inglaterra',
+          'M93': 'España',
+          'M94': 'Bélgica',
+          'M95': 'Argentina',
+          'M96': 'Suiza'
+        };
+        return OCTAVOS_WINNERS[code] || slot;
+      }
+      if (matchNum >= 97 && matchNum <= 100) {
+        const CUARTOS_WINNERS = {
+          'M97': 'Francia',
+          'M98': 'España',
+          'M99': 'Inglaterra',
+          'M100': 'Argentina'
+        };
+        return CUARTOS_WINNERS[code] || slot;
+      }
     }
 
     const predVal = elimPreds[code];
@@ -767,26 +795,50 @@ function resolveActualTeamForSlot(slot) {
     
     // In interactive mode, R32 winners (W73–W88) are hardcoded to real tournament results
     const modo = cache.configModo || 'interactivo';
-    if (modo === 'interactivo' && matchNum >= 73 && matchNum <= 88) {
-      const R32_WINNERS = {
-        'M73': 'Paraguay',
-        'M74': 'Canadá',
-        'M75': 'Marruecos',
-        'M76': 'Brasil',
-        'M77': 'Francia',
-        'M78': 'Noruega',
-        'M79': 'México',
-        'M80': 'Inglaterra',
-        'M81': 'Estados Unidos',
-        'M82': 'Bélgica',
-        'M83': 'Portugal',
-        'M84': 'España',
-        'M85': 'Suiza',
-        'M86': 'Argentina',
-        'M87': 'Colombia',
-        'M88': 'Egipto'
-      };
-      return R32_WINNERS[code] || slot;
+    if (modo === 'interactivo') {
+      if (matchNum >= 73 && matchNum <= 88) {
+        const R32_WINNERS = {
+          'M73': 'Paraguay',
+          'M74': 'Canadá',
+          'M75': 'Marruecos',
+          'M76': 'Brasil',
+          'M77': 'Francia',
+          'M78': 'Noruega',
+          'M79': 'México',
+          'M80': 'Inglaterra',
+          'M81': 'Estados Unidos',
+          'M82': 'Bélgica',
+          'M83': 'Portugal',
+          'M84': 'España',
+          'M85': 'Suiza',
+          'M86': 'Argentina',
+          'M87': 'Colombia',
+          'M88': 'Egipto'
+        };
+        return R32_WINNERS[code] || slot;
+      }
+      if (matchNum >= 89 && matchNum <= 96) {
+        const OCTAVOS_WINNERS = {
+          'M89': 'Francia',
+          'M90': 'Marruecos',
+          'M91': 'Noruega',
+          'M92': 'Inglaterra',
+          'M93': 'España',
+          'M94': 'Bélgica',
+          'M95': 'Argentina',
+          'M96': 'Suiza'
+        };
+        return OCTAVOS_WINNERS[code] || slot;
+      }
+      if (matchNum >= 97 && matchNum <= 100) {
+        const CUARTOS_WINNERS = {
+          'M97': 'Francia',
+          'M98': 'España',
+          'M99': 'Inglaterra',
+          'M100': 'Argentina'
+        };
+        return CUARTOS_WINNERS[code] || slot;
+      }
     }
 
     return getWinner(elimRes[code]) || slot;
