@@ -61,6 +61,8 @@ function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos, matchCode) {
     octavos: new Date(2026, 6, 4, 19, 0, 0).getTime(),  // 4 de Julio de 2026, 19:00 CEST
     cuartos: new Date(2026, 6, 9, 21, 0, 0).getTime(),  // 9 de Julio de 2026, 21:00 CEST
     semis: new Date(2026, 6, 14, 20, 0, 0).getTime(),   // 14 de Julio de 2026, 20:00 CEST
+    tercerPuesto: new Date(2026, 6, 21, 23, 59, 59).getTime(), // Extendida para editar
+    final: new Date(2026, 6, 21, 23, 59, 59).getTime(),   // Extendida para editar
   };
 
   // Check if the match belongs to Octavos (M89–M96)
@@ -74,6 +76,12 @@ function getMatchLockStatus(matchDateStr, matchTimeStr, isGrupos, matchCode) {
     }
     if (num >= 101 && num <= 102) {
       return now > PHASE_DEADLINES.semis;
+    }
+    if (num === 103) {
+      return now > PHASE_DEADLINES.tercerPuesto;
+    }
+    if (num === 104) {
+      return now > PHASE_DEADLINES.final;
     }
   }
 
@@ -701,6 +709,8 @@ function resolveTeamForSlot(slot, uid) {
   }
 
   if (slot === 'Ganador SF1') {
+    const modo = cache.configModo || 'interactivo';
+    if (modo === 'interactivo') return 'España';
     const predVal = elimPreds['M101'];
     if (predVal) {
       if (predVal.startsWith('{')) {
@@ -711,6 +721,8 @@ function resolveTeamForSlot(slot, uid) {
     return slot;
   }
   if (slot === 'Ganador SF2') {
+    const modo = cache.configModo || 'interactivo';
+    if (modo === 'interactivo') return 'Argentina';
     const predVal = elimPreds['M102'];
     if (predVal) {
       if (predVal.startsWith('{')) {
@@ -721,6 +733,8 @@ function resolveTeamForSlot(slot, uid) {
     return slot;
   }
   if (slot === 'Perdedor SF1') {
+    const modo = cache.configModo || 'interactivo';
+    if (modo === 'interactivo') return 'Francia';
     const predVal = elimPreds['M101'];
     if (predVal) {
       let winner = predVal;
@@ -745,6 +759,8 @@ function resolveTeamForSlot(slot, uid) {
     return slot;
   }
   if (slot === 'Perdedor SF2') {
+    const modo = cache.configModo || 'interactivo';
+    if (modo === 'interactivo') return 'Inglaterra';
     const predVal = elimPreds['M102'];
     if (predVal) {
       let winner = predVal;
@@ -843,9 +859,19 @@ function resolveActualTeamForSlot(slot) {
 
     return getWinner(elimRes[code]) || slot;
   }
-  if (slot === 'Ganador SF1') return getWinner(elimRes['M101']) || slot;
-  if (slot === 'Ganador SF2') return getWinner(elimRes['M102']) || slot;
+  if (slot === 'Ganador SF1') {
+    const modo = cache.configModo || 'interactivo';
+    if (modo === 'interactivo') return 'España';
+    return getWinner(elimRes['M101']) || slot;
+  }
+  if (slot === 'Ganador SF2') {
+    const modo = cache.configModo || 'interactivo';
+    if (modo === 'interactivo') return 'Argentina';
+    return getWinner(elimRes['M102']) || slot;
+  }
   if (slot === 'Perdedor SF1') {
+    const modo = cache.configModo || 'interactivo';
+    if (modo === 'interactivo') return 'Francia';
     const winner = getWinner(elimRes['M101']);
     if (winner) {
       let local = 'W97';
@@ -869,6 +895,8 @@ function resolveActualTeamForSlot(slot) {
     return slot;
   }
   if (slot === 'Perdedor SF2') {
+    const modo = cache.configModo || 'interactivo';
+    if (modo === 'interactivo') return 'Inglaterra';
     const winner = getWinner(elimRes['M102']);
     if (winner) {
       let local = 'W99';
