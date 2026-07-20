@@ -401,7 +401,7 @@ function renderRanking(){
         else trendHtml = `<span style="color:var(--text3);font-size:12px;margin-left:4px;">-</span>`;
       }
     }
-    return `<tr><td><span class="pos-badge ${bc}">${pos}</span>${trendHtml}</td><td class="name-col"><div style="display:flex;align-items:center;gap:8px">${renderAvatarHtml(p, 'sm')}<span>${p.name}${youMark}${adminMark}</span></div></td><td class="pts-col">${p.grupos}</td><td>${p.r32}</td><td>${p.octavos}</td><td>${p.cuartos}</td><td>${p.semis}</td><td>${p.final}</td><td style="color:var(--accent2)">${p.campeon}</td><td>${p.sub}</td><td class="pts-col" style="font-size:18px">${p.total}</td></tr>`;
+    return `<tr><td><span class="pos-badge ${bc}">${pos}</span>${trendHtml}</td><td class="name-col"><div style="display:flex;align-items:center;gap:8px">${renderAvatarHtml(p, 'sm')}<span>${p.name}${youMark}${adminMark}</span></div></td><td class="pts-col">${p.grupos}</td><td>${p.r32}</td><td>${p.octavos}</td><td>${p.cuartos}</td><td>${p.semis}</td><td>${p.final}</td><td style="color:var(--accent2)">${p.campeon}</td><td>${p.sub}</td><td style="color:var(--accent)">${p.customPts}</td><td class="pts-col" style="font-size:18px">${p.total}</td></tr>`;
   }).join('');
 
   // ---- Móvil cards ----
@@ -429,7 +429,7 @@ function renderRanking(){
       <div class="rc-pos" style="display:flex;flex-direction:column;justify-content:center;">${posLabel}${trendHtml}</div>
       <div class="rc-info">
         <div class="rc-name" style="display:flex;align-items:center;gap:6px">${renderAvatarHtml(p, 'sm')} <span>${adminMark}${p.name}${youMark}</span></div>
-        <div class="rc-detail">Grupos: <b>${p.grupos}</b> · Elim: <b>${p.r32+p.octavos+p.cuartos+p.semis+p.final}</b> · Esp: <b>${p.campeon+p.sub}</b>${champStr?' · '+champStr:''}</div>
+        <div class="rc-detail">Grupos: <b>${p.grupos}</b> · Elim: <b>${p.r32+p.octavos+p.cuartos+p.semis+p.final}</b> · Esp: <b>${p.campeon+p.sub+p.customPts}</b>${champStr?' · '+champStr:''}</div>
       </div>
       <div class="rc-pts">${p.total}<span> pts</span></div>
     </div>`;

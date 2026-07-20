@@ -156,8 +156,11 @@ function calcScore(uid){
   const esp=preds.especiales||{}, re=cache.resultados.especiales||{};
   if(esp.campeon&&re.campeon&&esp.campeon===re.campeon) campeon_+=ptsCamp;
   if(esp.subcampeon&&re.subcampeon&&esp.subcampeon===re.subcampeon) sub+=ptsSub;
+  if(esp.tercero&&re.tercero&&esp.tercero===re.tercero) customPts+=getNormaPts('Eliminatorias', 'tercero', 10);
+  if(esp.pichichi&&re.pichichi&&esp.pichichi.toLowerCase()===re.pichichi.toLowerCase()) customPts+=getNormaPts('Especiales', 'pichichi', 10);
   if(esp.pichichiEspana&&re.pichichiEspana&&esp.pichichiEspana.toLowerCase()===re.pichichiEspana.toLowerCase()) customPts+=getNormaPts('España', 'goleador', 10);
-
+  if(esp.masGoles&&re.masGoles&&esp.masGoles.toLowerCase()===re.masGoles.toLowerCase()) customPts+=getNormaPts('Especiales', 'masGoles', 5);
+  if(esp.masTarjetas&&re.masTarjetas&&esp.masTarjetas.toLowerCase()===re.masTarjetas.toLowerCase()) customPts+=getNormaPts('Especiales', 'masTarjetas', 5);
   (cache.normasRaw||[]).forEach(n=>{
     if(n.tipo==='special_custom'){
       const d=n.datos;
